@@ -1,6 +1,6 @@
 const startBot = async () => {
     try {
-      const response = await fetch("https://tu-bot.onrender.com/start", {
+      const response = await fetch("https://trading-bot-kv25.onrender.com/start", {
         method: "POST",
       });
       const data = await response.json();
@@ -12,7 +12,7 @@ const startBot = async () => {
   
   const stopBot = async () => {
     try {
-      const response = await fetch("https://tu-bot.onrender.com/stop", {
+      const response = await fetch("https://trading-bot-kv25.onrender.com/stop", {
         method: "POST",
       });
       const data = await response.json();
