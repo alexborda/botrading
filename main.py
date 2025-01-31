@@ -2,6 +2,10 @@ from fastapi import FastAPI, WebSocket, Depends, HTTPException, Header
 import uvicorn
 import requests
 import asyncio
+import os
+
+BYBIT_API_KEY = os.getenv("BYBIT_API_KEY")
+BYBIT_API_SECRET = os.getenv("BYBIT_API_SECRET")
 
 # Configuración de la API
 app = FastAPI()
