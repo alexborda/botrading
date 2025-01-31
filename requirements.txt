@@ -5,3 +5,4 @@ tensorflow  # o usa torch si prefieres PyTorch
 numpy
 pandas
 scikit-learn
+asyncio
