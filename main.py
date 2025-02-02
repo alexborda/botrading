@@ -7,7 +7,8 @@ import pandas as pd
 # Configuración de la API de Bybit
 BYBIT_API_KEY = os.getenv("BYBIT_API_KEY")
 BYBIT_API_SECRET = os.getenv("BYBIT_API_SECRET")
-BYBIT_BASE_URL = "https://api.bybit.com"
+#BYBIT_BASE_URL = "https://api.bybit.com"
+BYBIT_BASE_URL = "https://api-testnet.bybit.com"  # URL para Testnet
 
 if not BYBIT_API_KEY or not BYBIT_API_SECRET:
     raise ValueError("Faltan las claves de API de Bybit. Agrégalas en Render.")
