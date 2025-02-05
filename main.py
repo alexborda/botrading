@@ -7,7 +7,6 @@ import requests
 import hashlib
 import hmac
 import asyncio
-import websockets
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
