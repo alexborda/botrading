@@ -1,14 +1,29 @@
 import os
-import openai
-from fastapi import FastAPI, HTTPException
-import requests
 import pandas as pd
+import time
+import json
+import openai
+import requests
+import hashlib
+import hmac
+import asyncio
+import websockets
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://bot-control-ui.onrender.com"],  # SOLO tu frontend en producción
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Configuración de la API de Bybit
 BYBIT_API_KEY = os.getenv("BYBIT_API_KEY")
 BYBIT_API_SECRET = os.getenv("BYBIT_API_SECRET")
-#BYBIT_BASE_URL = "https://api.bybit.com"
 BYBIT_BASE_URL = "https://api-testnet.bybit.com"  # URL para Testnet
+BYBIT_WS_URL = "wss://stream-testnet.bybit.com/v5/public/spot"  # WebSocket para datos en vivo
 
 if not BYBIT_API_KEY or not BYBIT_API_SECRET:
     raise ValueError("Faltan las claves de API de Bybit. Agrégalas en Render.")
