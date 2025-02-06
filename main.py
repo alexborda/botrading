@@ -100,10 +100,11 @@ async def webhook(data: dict):
             order_type=data.get("order_type", "market"),
             symbol=data.get("symbol", "BTCUSDT"),
             qty=float(data.get("qty", 0.01)),
-            price=float(data.get("price")) if "price" in data else None,
+            price=float(data.get("take_profit")) if "take_profit" in data else None,
             stop_loss=float(data.get("stop_loss")) if "stop_loss" in data else None,
-            take_profit=float(data.get("take_profit")) if "take_profit" in data else None,
             trailing_stop=float(data.get("trailing_stop")) if "trailing_stop" in data else None,
+            break_even=float(data.get("break_even")) if "break_even" in data else None,
+            hedging=bool(data.get("hedging", False))
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
