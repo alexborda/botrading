@@ -10,6 +10,9 @@ import websockets
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 
+# Variable global para simular el estado del bot
+bot_running = False   # Estado del bot
+
 # Inicializar FastAPI
 app = FastAPI()
 
@@ -55,6 +58,24 @@ def sign_request(payload: dict) -> dict:
 
     payload["sign"] = signature
     return payload
+
+@app.get("/status")
+def get_status():
+    """Devuelve el estado actual del bot"""
+    return {"bot_running": True}  # Cambia según el estado real del bot
+
+@app.post("/start")
+def start_bot():
+    global bot_running
+    bot_running = True
+    return {"status": "Bot iniciado"}
+
+@app.post("/stop")
+def stop_bot():
+    global bot_running
+    bot_running = False
+    return {"status": "Bot detenido"}
+
 
 @app.post("/trade")
 async def trade(request: Request):
