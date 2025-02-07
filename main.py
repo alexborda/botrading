@@ -7,7 +7,7 @@ import hashlib
 import hmac
 import asyncio
 import websockets
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 # Inicializar FastAPI
@@ -16,7 +16,7 @@ app = FastAPI()
 # Configuración de CORS para permitir conexiones desde el frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://bot-control-ui.onrender.com"],  # Cambia por tu frontend en producción
+    allow_origins=["https://bot-control-ui.onrender.com"],  # Frontend en Render
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,7 +29,7 @@ BYBIT_BASE_URL = "https://api-testnet.bybit.com"  # Testnet URL
 BYBIT_WS_URL = "wss://stream-testnet.bybit.com/v5/public/spot"  # WebSocket Bybit para datos en vivo
 BYBIT_WS_PRIVATE = "wss://stream-testnet.bybit.com/v5/private"  # WebSocket para órdenes
 
-WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "supersecreto123")  # Token para TradingView Webhook
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "supersecreto123")  # Token de seguridad
 
 if not BYBIT_API_KEY or not BYBIT_API_SECRET:
     raise ValueError("Faltan las claves de API de Bybit. Agrégalas en Render.")
@@ -45,37 +45,45 @@ def root():
     return {"message": "API de Trading con OpenAI y Bybit 🚀"}
 
 # Función para firmar solicitudes de Bybit
-def sign_request(params: dict) -> dict:
+def sign_request(payload: dict) -> dict:
     """Firma la solicitud para Bybit usando HMAC SHA256."""
-    params["api_key"] = BYBIT_API_KEY
-    params["timestamp"] = int(time.time() * 1000)
-    sorted_params = sorted(params.items())
-    query_string = "&".join([f"{key}={value}" for key, value in sorted_params])
-    signature = hmac.new(BYBIT_API_SECRET.encode(), query_string.encode(), hashlib.sha256).hexdigest()
-    params["sign"] = signature
-    return params
+    payload["api_key"] = BYBIT_API_KEY
+    payload["timestamp"] = int(time.time() * 1000)
+
+    payload_json = json.dumps(payload, separators=(',', ':'))
+    signature = hmac.new(BYBIT_API_SECRET.encode(), payload_json.encode(), hashlib.sha256).hexdigest()
+
+    payload["sign"] = signature
+    return payload
 
 @app.post("/trade")
-def trade(order_type: str, symbol: str, qty: float, price: float = None, stop_loss: float = None, take_profit: float = None, trailing_stop: float = None):
-    """Ejecuta una orden en Bybit con soporte para Stop-Loss, Take-Profit y Trailing Stop."""
-    if order_type.lower() not in ["buy", "sell"]:
+async def trade(request: Request):
+    """Ejecuta una orden en Bybit con Stop-Loss, Take-Profit y Trailing Stop."""
+    data = await request.json()
+
+    if data.get("secret") != WEBHOOK_SECRET:
+        raise HTTPException(status_code=403, detail="Acceso no autorizado")
+
+    order_type = data.get("order_type", "market").lower()
+    symbol = data.get("symbol", "BTCUSDT").strip().upper()
+    qty = float(data.get("qty", 0.01))
+
+    if order_type not in ["buy", "sell"]:
         raise HTTPException(status_code=400, detail="order_type debe ser 'buy' o 'sell'")
 
     order_payload = {
         "symbol": symbol,
-        "side": "Buy" if order_type.lower() == "buy" else "Sell",
-        "order_type": "Market" if price is None else "Limit",
+        "side": "Buy" if order_type == "buy" else "Sell",
+        "order_type": "Market" if data.get("price") is None else "Limit",
         "qty": qty,
         "time_in_force": "GTC",
+        "price": data.get("price"),
+        "stop_loss": data.get("stop_loss"),
+        "take_profit": data.get("take_profit"),
+        "trailing_stop": data.get("trailing_stop"),
     }
-    if price:
-        order_payload["price"] = price
-    if stop_loss:
-        order_payload["stop_loss"] = stop_loss
-    if take_profit:
-        order_payload["take_profit"] = take_profit
-    if trailing_stop:
-        order_payload["trailing_stop"] = trailing_stop
+
+    order_payload = {k: v for k, v in order_payload.items() if v is not None}
 
     signed_payload = sign_request(order_payload)
     url = f"{BYBIT_BASE_URL}/v2/private/order/create"
@@ -85,39 +93,15 @@ def trade(order_type: str, symbol: str, qty: float, price: float = None, stop_lo
         result = response.json()
         if result.get("ret_code") != 0:
             raise HTTPException(status_code=400, detail=result.get("ret_msg", "Error en la orden"))
-        return result
+        return {"status": "success", "data": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/webhook")
-async def webhook(data: dict):
-    """Recibe señales de TradingView y ejecuta órdenes en Bybit."""
-    if data.get("secret") != WEBHOOK_SECRET:
-        raise HTTPException(status_code=403, detail="Acceso no autorizado")
-
-    try:
-        return trade(
-            order_type=data.get("order_type", "market"),
-            symbol=data.get("symbol", "BTCUSDT"),
-            qty=float(data.get("qty", 0.01)),
-            price=float(data.get("take_profit")) if "take_profit" in data else None,
-            stop_loss=float(data.get("stop_loss")) if "stop_loss" in data else None,
-            trailing_stop=float(data.get("trailing_stop")) if "trailing_stop" in data else None,
-            break_even=float(data.get("break_even")) if "break_even" in data else None,
-            hedging=bool(data.get("hedging", False))
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# WebSocket para recibir datos de mercado en tiempo real desde Bybit
 @app.websocket("/ws/market")
 async def websocket_market(websocket: WebSocket):
     await websocket.accept()
     async with websockets.connect(BYBIT_WS_URL) as ws:
-        subscribe_message = {
-            "op": "subscribe",
-            "args": ["tickers.BTCUSDT"]
-        }
+        subscribe_message = {"op": "subscribe", "args": ["tickers.BTCUSDT"]}
         await ws.send(json.dumps(subscribe_message))
 
         try:
@@ -128,7 +112,6 @@ async def websocket_market(websocket: WebSocket):
         except WebSocketDisconnect:
             print("Cliente desconectado de Market WebSocket")
 
-# WebSocket para recibir actualizaciones de órdenes en tiempo real
 @app.websocket("/ws/orders")
 async def websocket_orders(websocket: WebSocket):
     await websocket.accept()
@@ -137,16 +120,10 @@ async def websocket_orders(websocket: WebSocket):
         signature_payload = f"GET/realtime{expires}"
         signature = hmac.new(BYBIT_API_SECRET.encode(), signature_payload.encode(), hashlib.sha256).hexdigest()
 
-        auth_message = {
-            "op": "auth",
-            "args": [BYBIT_API_KEY, expires, signature]
-        }
+        auth_message = {"op": "auth", "args": [BYBIT_API_KEY, expires, signature]}
         await ws.send(json.dumps(auth_message))
 
-        subscribe_message = {
-            "op": "subscribe",
-            "args": ["order"]
-        }
+        subscribe_message = {"op": "subscribe", "args": ["order"]}
         await ws.send(json.dumps(subscribe_message))
 
         try:
