@@ -7,19 +7,21 @@ import hashlib
 import hmac
 import asyncio
 import websockets
+from decimal import Decimal
+from collections import OrderedDict
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-# Variable global para simular el estado del bot
-bot_running = False   # Estado del bot
+# Estado del bot
+bot_running = False
 
 # Inicializar FastAPI
 app = FastAPI()
 
-# Configuración de CORS para permitir conexiones desde el frontend
+# Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://bot-control-ui.onrender.com"],  # Frontend en Render
+    allow_origins=["https://bot-control-ui.onrender.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -28,16 +30,16 @@ app.add_middleware(
 # Configuración de Bybit API
 BYBIT_API_KEY = os.getenv("BYBIT_API_KEY")
 BYBIT_API_SECRET = os.getenv("BYBIT_API_SECRET")
-BYBIT_BASE_URL = "https://api-testnet.bybit.com"  # Testnet URL
-BYBIT_WS_URL = "wss://stream-testnet.bybit.com/v5/public/spot"  # WebSocket Bybit para datos en vivo
-BYBIT_WS_PRIVATE = "wss://stream-testnet.bybit.com/v5/private"  # WebSocket para órdenes
+BYBIT_BASE_URL = "https://api-testnet.bybit.com"
+BYBIT_WS_URL = "wss://stream-testnet.bybit.com/v5/public/spot"
+BYBIT_WS_PRIVATE = "wss://stream-testnet.bybit.com/v5/private"
 
-WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "supersecreto123")  # Token de seguridad
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "supersecreto123")
 
 if not BYBIT_API_KEY or not BYBIT_API_SECRET:
     raise ValueError("Faltan las claves de API de Bybit. Agrégalas en Render.")
 
-# Configuración de OpenAI (opcional)
+# Configuración de OpenAI (Opcional)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     raise ValueError("Falta la API Key de OpenAI. Agrégala en Render.")
@@ -53,29 +55,30 @@ def sign_request(payload: dict) -> dict:
     payload["api_key"] = BYBIT_API_KEY
     payload["timestamp"] = int(time.time() * 1000)
 
-    payload_json = json.dumps(payload, separators=(',', ':'))
+    # Asegurar orden de parámetros para la firma
+    sorted_payload = OrderedDict(sorted(payload.items()))
+    payload_json = json.dumps(sorted_payload, separators=(',', ':'))
+    
     signature = hmac.new(BYBIT_API_SECRET.encode(), payload_json.encode(), hashlib.sha256).hexdigest()
-
     payload["sign"] = signature
     return payload
 
 @app.get("/status")
 def get_status():
     """Devuelve el estado actual del bot"""
-    return {"bot_running": True}  # Cambia según el estado real del bot
+    return {"bot_running": bot_running}
 
 @app.post("/start")
-def start_bot():
+async def start_bot():
     global bot_running
     bot_running = True
     return {"status": "Bot iniciado"}
 
 @app.post("/stop")
-def stop_bot():
+async def stop_bot():
     global bot_running
     bot_running = False
     return {"status": "Bot detenido"}
-
 
 @app.post("/trade")
 async def trade(request: Request):
@@ -87,7 +90,13 @@ async def trade(request: Request):
 
     order_type = data.get("order_type", "market").lower()
     symbol = data.get("symbol", "BTCUSDT").strip().upper()
-    qty = float(data.get("qty", 0.01))
+    
+    try:
+        qty = Decimal(str(data.get("qty", 0.01)))  # Precisión con Decimal
+        if qty <= 0:
+            raise ValueError("Cantidad debe ser mayor a 0")
+    except:
+        raise HTTPException(status_code=400, detail="Cantidad inválida")
 
     if order_type not in ["buy", "sell"]:
         raise HTTPException(status_code=400, detail="order_type debe ser 'buy' o 'sell'")
@@ -96,7 +105,7 @@ async def trade(request: Request):
         "symbol": symbol,
         "side": "Buy" if order_type == "buy" else "Sell",
         "order_type": "Market" if data.get("price") is None else "Limit",
-        "qty": qty,
+        "qty": str(qty),
         "time_in_force": "GTC",
         "price": data.get("price"),
         "stop_loss": data.get("stop_loss"),
@@ -105,11 +114,11 @@ async def trade(request: Request):
     }
 
     order_payload = {k: v for k, v in order_payload.items() if v is not None}
-
     signed_payload = sign_request(order_payload)
-    url = f"{BYBIT_BASE_URL}/v2/private/order/create"
 
+    url = f"{BYBIT_BASE_URL}/v2/private/order/create"
     response = requests.post(url, json=signed_payload)
+
     try:
         result = response.json()
         if result.get("ret_code") != 0:
@@ -132,6 +141,8 @@ async def websocket_market(websocket: WebSocket):
                 await websocket.send_json(data)
         except WebSocketDisconnect:
             print("Cliente desconectado de Market WebSocket")
+        except Exception as e:
+            print(f"Error en Market WebSocket: {e}")
 
 @app.websocket("/ws/orders")
 async def websocket_orders(websocket: WebSocket):
@@ -154,6 +165,8 @@ async def websocket_orders(websocket: WebSocket):
                 await websocket.send_json(data)
         except WebSocketDisconnect:
             print("Cliente desconectado de Orders WebSocket")
+        except Exception as e:
+            print(f"Error en Orders WebSocket: {e}")
 
 if __name__ == "__main__":
     import uvicorn
