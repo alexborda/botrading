@@ -21,12 +21,15 @@ app = FastAPI()
 # Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "https://trading-bot-kv25.onrender.com"],  # ⚠️ Asegúrate de agregar la URL del frontend
+    allow_origins=[
+        "http://localhost:5173",  # Para desarrollo
+        "https://bot-control-ui.onrender.com",  # Frontend en Render
+        "https://trading-bot-kv25.onrender.com",  # Backend en Render
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 # Configuración de Bybit API
 BYBIT_API_KEY = os.getenv("BYBIT_API_KEY")
@@ -67,19 +70,23 @@ def sign_request(payload: dict) -> dict:
 @app.get("/status")
 def get_status():
     """Devuelve el estado actual del bot"""
-    return {"bot_running": bot_running}
+    return {"status": bot_running}
 
 @app.post("/start")
 async def start_bot():
-    global bot_running
-    bot_running = True
-    return {"status": "Bot iniciado"}
-
+    try:
+        # Código para iniciar el bot
+        return {"status": "Bot iniciado"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
 @app.post("/stop")
 async def stop_bot():
-    global bot_running
-    bot_running = False
-    return {"status": "Bot detenido"}
+    try:
+        # Código para detener el bot
+        return {"status": "Bot detenido"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/trade")
 async def trade(request: Request):
