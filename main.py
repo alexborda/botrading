@@ -25,7 +25,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",  # Para desarrollo
         "https://bot-control-ui.onrender.com",  # Frontend en Render
-        "https://trading-bot-kv25.onrender.com",  # Backend en Render
+        "https://tradingbot.up.railway.app",  # Backend en Render
     ],
     allow_credentials=True,
     allow_methods=["*"],
