@@ -21,11 +21,12 @@ app = FastAPI()
 # Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://bot-control-ui.onrender.com"],
+    allow_origins=["http://localhost:5173", "https://trading-bot-kv25.onrender.com"],  # ⚠️ Asegúrate de agregar la URL del frontend
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Configuración de Bybit API
 BYBIT_API_KEY = os.getenv("BYBIT_API_KEY")
@@ -130,43 +131,53 @@ async def trade(request: Request):
 @app.websocket("/ws/market")
 async def websocket_market(websocket: WebSocket):
     await websocket.accept()
-    async with websockets.connect(BYBIT_WS_URL) as ws:
-        subscribe_message = {"op": "subscribe", "args": ["tickers.BTCUSDT"]}
-        await ws.send(json.dumps(subscribe_message))
+    try:
+        async with websockets.connect(BYBIT_WS_URL) as ws:
+            subscribe_message = {"op": "subscribe", "args": ["tickers.BTCUSDT"]}
+            await ws.send(json.dumps(subscribe_message))
 
-        try:
             while True:
-                response = await ws.recv()
-                data = json.loads(response)
-                await websocket.send_json(data)
-        except WebSocketDisconnect:
-            print("Cliente desconectado de Market WebSocket")
-        except Exception as e:
-            print(f"Error en Market WebSocket: {e}")
+                try:
+                    response = await ws.recv()
+                    data = json.loads(response)
+                    await websocket.send_json(data)
+                except websockets.exceptions.ConnectionClosed:
+                    print("Conexión WebSocket de Market cerrada, reconectando...")
+                    await asyncio.sleep(2)
+                    continue
+    except Exception as e:
+        print(f"❌ Error en Market WebSocket: {e}")
 
 @app.websocket("/ws/orders")
 async def websocket_orders(websocket: WebSocket):
     await websocket.accept()
-    async with websockets.connect(BYBIT_WS_PRIVATE) as ws:
-        expires = int(time.time()) + 10
-        signature_payload = f"GET/realtime{expires}"
-        signature = hmac.new(BYBIT_API_SECRET.encode(), signature_payload.encode(), hashlib.sha256).hexdigest()
+    try:
+        async with websockets.connect(BYBIT_WS_PRIVATE) as ws:
+            expires = int(time.time()) + 10
+            signature_payload = f"GET/realtime{expires}"
+            signature = hmac.new(
+                BYBIT_API_SECRET.encode(), 
+                signature_payload.encode(), 
+                "sha256"
+            ).hexdigest()
 
-        auth_message = {"op": "auth", "args": [BYBIT_API_KEY, expires, signature]}
-        await ws.send(json.dumps(auth_message))
+            auth_message = {"op": "auth", "args": [BYBIT_API_KEY, expires, signature]}
+            await ws.send(json.dumps(auth_message))
 
-        subscribe_message = {"op": "subscribe", "args": ["order"]}
-        await ws.send(json.dumps(subscribe_message))
+            subscribe_message = {"op": "subscribe", "args": ["order"]}
+            await ws.send(json.dumps(subscribe_message))
 
-        try:
             while True:
-                response = await ws.recv()
-                data = json.loads(response)
-                await websocket.send_json(data)
-        except WebSocketDisconnect:
-            print("Cliente desconectado de Orders WebSocket")
-        except Exception as e:
-            print(f"Error en Orders WebSocket: {e}")
+                try:
+                    response = await ws.recv()
+                    data = json.loads(response)
+                    await websocket.send_json(data)
+                except websockets.exceptions.ConnectionClosed:
+                    print("Conexión WebSocket de Orders cerrada, reconectando...")
+                    await asyncio.sleep(2)
+                    continue
+    except Exception as e:
+        print(f"❌ Error en Orders WebSocket: {e}")
 
 if __name__ == "__main__":
     import uvicorn
