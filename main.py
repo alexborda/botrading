@@ -148,6 +148,7 @@ async def websocket_market(websocket: WebSocket):
                     response = await ws.recv()
                     data = json.loads(response)
                     await websocket.send_json(data)
+                    await asyncio.sleep(5)
                 except websockets.exceptions.ConnectionClosed:
                     print("Conexión WebSocket de Market cerrada, reconectando...")
                     await asyncio.sleep(2)
@@ -179,6 +180,7 @@ async def websocket_orders(websocket: WebSocket):
                     response = await ws.recv()
                     data = json.loads(response)
                     await websocket.send_json(data)
+                    await asyncio.sleep(5)  # Evita desconexiones
                 except websockets.exceptions.ConnectionClosed:
                     print("Conexión WebSocket de Orders cerrada, reconectando...")
                     await asyncio.sleep(2)
