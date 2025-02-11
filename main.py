@@ -1,4 +1,5 @@
 import os
+import ssl
 import uvicorn
 import time
 import json
@@ -20,13 +21,11 @@ bot_running = False
 app = FastAPI()
 
 # Configuración de CORS
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",  # Para desarrollo
-        "https://bot-control-ui.onrender.com",  # Frontend en Render
-        "https://tradingbot.up.railway.app",  # Backend en Render
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -36,8 +35,8 @@ app.add_middleware(
 BYBIT_API_KEY = os.getenv("BYBIT_API_KEY")
 BYBIT_API_SECRET = os.getenv("BYBIT_API_SECRET")
 BYBIT_BASE_URL = "https://api-testnet.bybit.com"
-BYBIT_WS_URL = "wss://stream-testnet.bybit.com/v5/public/spot"
-BYBIT_WS_PRIVATE = "wss://stream-testnet.bybit.com/v5/private"
+BYBIT_WS_URL = os.getenv("BYBIT_WS_URL", "wss://stream-testnet.bybit.com/v5/public/spot")
+BYBIT_WS_PRIVATE = os.getenv("BYBIT_WS_PRIVATE", "wss://stream-testnet.bybit.com/v5/private")
 
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "supersecreto123")
 
@@ -140,7 +139,8 @@ async def trade(request: Request):
 async def websocket_market(websocket: WebSocket):
     await websocket.accept()
     try:
-        async with websockets.connect(BYBIT_WS_URL) as ws:
+        ssl_context = ssl.create_default_context()  # Forzar WSS en producción
+        async with websockets.connect(BYBIT_WS_URL, ssl=ssl_context) as ws:
             subscribe_message = {"op": "subscribe", "args": ["tickers.BTCUSDT"]}
             await ws.send(json.dumps(subscribe_message))
 
@@ -151,11 +151,11 @@ async def websocket_market(websocket: WebSocket):
                     await websocket.send_json(data)
                     await asyncio.sleep(5)
                 except websockets.exceptions.ConnectionClosed:
-                    print("Conexión WebSocket de Market cerrada, reconectando...")
+                    print("Conexión WebSocket cerrada, reconectando...")
                     await asyncio.sleep(2)
                     continue
     except Exception as e:
-        print(f"❌ Error en Market WebSocket: {e}")
+        print(f"❌ Error en WebSocket Market: {e}")
 
 @app.websocket("/ws/orders")
 async def websocket_orders(websocket: WebSocket):
