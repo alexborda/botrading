@@ -20,8 +20,15 @@ bot_running = False
 # Inicializar FastAPI
 app = FastAPI()
 
-# Configuración de CORS
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "").split(",")
+
+# Variables de entorno
+BYBIT_API_KEY = os.getenv("BYBIT_API_KEY")
+BYBIT_API_SECRET = os.getenv("BYBIT_API_SECRET")
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "supersecreto123")
+BYBIT_BASE_URL = "https://api-testnet.bybit.com"
+BYBIT_WS_URL = os.getenv("BYBIT_WS_URL", "wss://stream-testnet.bybit.com/v5/public/spot")
+BYBIT_WS_PRIVATE = os.getenv("BYBIT_WS_PRIVATE", "wss://stream-testnet.bybit.com/v5/private")
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "").split(",")# Configuración de CORS
 
 app.add_middleware(
     CORSMiddleware,
@@ -30,15 +37,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Configuración de Bybit API
-BYBIT_API_KEY = os.getenv("BYBIT_API_KEY")
-BYBIT_API_SECRET = os.getenv("BYBIT_API_SECRET")
-BYBIT_BASE_URL = "https://api-testnet.bybit.com"
-BYBIT_WS_URL = os.getenv("BYBIT_WS_URL", "wss://stream-testnet.bybit.com/v5/public/spot")
-BYBIT_WS_PRIVATE = os.getenv("BYBIT_WS_PRIVATE", "wss://stream-testnet.bybit.com/v5/private")
-
-WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "supersecreto123")
 
 if not BYBIT_API_KEY or not BYBIT_API_SECRET:
     raise ValueError("Faltan las claves de API de Bybit. Agrégalas en Render.")
