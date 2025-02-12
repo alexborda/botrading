@@ -72,21 +72,23 @@ def get_status():
 
 @app.post("/start")
 async def start_bot():
+    global bot_running  # ⚡ Añadir global para modificar la variable
     try:
         # Código para iniciar el bot
         bot_running = True  # ✅ Asegurar que cambia a True
         print("✅ Bot iniciado correctamente")
-        return {"status": True}
+        return {"status": bot_running}  # ✅ Devuelve el nuevo estado
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
 @app.post("/stop")
 async def stop_bot():
+    global bot_running  # ⚡ Añadir global para modificar la variable
     try:
         # Código para detener el bot
         bot_running = False  # ✅ Asegurar que cambia a False
         print("✅ Bot detenido correctamente")
-        return {"status": False}
+        return {"status": bot_running}  # ✅ Devuelve el nuevo estado
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
