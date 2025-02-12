@@ -159,6 +159,7 @@ async def websocket_market(websocket: WebSocket):
 async def websocket_orders(websocket: WebSocket):
     await websocket.accept()
     try:
+        ssl_context = ssl.create_default_context()
         async with websockets.connect(BYBIT_WS_PRIVATE) as ws:
             expires = int(time.time()) + 10
             signature_payload = f"GET/realtime{expires}"
@@ -188,5 +189,5 @@ async def websocket_orders(websocket: WebSocket):
         print(f"❌ Error en Orders WebSocket: {e}")
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))  # Railway asigna dinámicamente el puerto
+    port = int(os.getenv("PORT", 8080))  # Railway asigna dinámicamente el puerto
     uvicorn.run(app, host="0.0.0.0", port=port)
