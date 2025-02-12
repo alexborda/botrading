@@ -143,21 +143,16 @@ async def trade(request: Request):
 async def websocket_market(websocket: WebSocket):
     await websocket.accept()
     try:
-        ssl_context = ssl.create_default_context()  # Forzar WSS en producción
-        async with websockets.connect(BYBIT_WS_URL, ssl=ssl_context) as ws:
+        async with websockets.connect(BYBIT_WS_URL) as ws:
             subscribe_message = {"op": "subscribe", "args": ["tickers.BTCUSDT"]}
             await ws.send(json.dumps(subscribe_message))
 
             while True:
-                try:
-                    response = await ws.recv()
-                    data = json.loads(response)
-                    await websocket.send_json(data)
-                    await asyncio.sleep(5)
-                except websockets.exceptions.ConnectionClosed:
-                    print("Conexión WebSocket cerrada, reconectando...")
-                    await asyncio.sleep(2)
-                    continue
+                response = await ws.recv()
+                data = json.loads(response)
+                print("📡 Enviando datos al frontend:", data)  # <-- Agregar este log
+                await websocket.send_json(data)  # <-- Asegurar que enviamos datos
+                await asyncio.sleep(1)
     except Exception as e:
         print(f"❌ Error en WebSocket Market: {e}")
 
