@@ -74,6 +74,7 @@ def get_status():
 async def start_bot():
     try:
         # Código para iniciar el bot
+        bot_running = True  # ✅ Asegurar que cambia a True
         return {"status": "Bot iniciado"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -82,6 +83,7 @@ async def start_bot():
 async def stop_bot():
     try:
         # Código para detener el bot
+        bot_running = False  # ✅ Asegurar que cambia a False
         return {"status": "Bot detenido"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
