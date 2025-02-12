@@ -144,15 +144,16 @@ async def websocket_market(websocket: WebSocket):
     await websocket.accept()
     try:
         async with websockets.connect(BYBIT_WS_URL) as ws:
-            subscribe_message = {"op": "subscribe", "args": ["tickers.BTCUSDT"]}
+            # Suscribirse a tickers de mercado
+            subscribe_message = {"op": "subscribe", "args": ["tickers.ETHUSDT"]}
             await ws.send(json.dumps(subscribe_message))
 
             while True:
                 response = await ws.recv()
                 data = json.loads(response)
-                print("📡 Enviando datos al frontend:", data)  # <-- Agregar este log
-                await websocket.send_json(data)  # <-- Asegurar que enviamos datos
-                await asyncio.sleep(1)
+                print("📡 Enviando datos de mercado al frontend:", data)  # <-- Log para debug
+                await websocket.send_json(data)  # <-- Enviar datos al frontend
+                await asyncio.sleep(1)  # Reducir carga
     except Exception as e:
         print(f"❌ Error en WebSocket Market: {e}")
 
