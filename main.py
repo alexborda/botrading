@@ -28,8 +28,9 @@ WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "supersecreto123")
 BYBIT_BASE_URL = os.getenv("BYBIT_BASE_URL", "https://api-testnet.bybit.com")
 BYBIT_WS_URL = os.getenv("BYBIT_WS_URL", "wss://stream-testnet.bybit.com/v5/public/spot")
 BYBIT_WS_PRIVATE = os.getenv("BYBIT_WS_PRIVATE", "wss://stream-testnet.bybit.com/v5/private")
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "").split(",")# Configuración de CORS
 
+# Configuración de CORS
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
@@ -52,18 +53,21 @@ def root():
     return {"message": "API de Trading con OpenAI y Bybit 🚀"}
 
 # Función para firmar solicitudes de Bybit
-def sign_request(payload: dict) -> dict:
+def sign_request(params: dict) -> dict:
     """Firma la solicitud para Bybit usando HMAC SHA256."""
-    payload["api_key"] = BYBIT_API_KEY
-    payload["timestamp"] = int(time.time() * 1000)
+    params["api_key"] = BYBIT_API_KEY
+    params["timestamp"] = str(int(time.time() * 1000))
 
-    # Asegurar orden de parámetros para la firma
-    sorted_payload = OrderedDict(sorted(payload.items()))
-    payload_json = json.dumps(sorted_payload, separators=(',', ':'))
-    
-    signature = hmac.new(BYBIT_API_SECRET.encode(), payload_json.encode(), hashlib.sha256).hexdigest()
-    payload["sign"] = signature
-    return payload
+    # Crear firma ordenada
+    sorted_params = OrderedDict(sorted(params.items()))
+    query_string = "&".join([f"{key}={value}" for key, value in sorted_params.items()])
+
+    signature = hmac.new(
+        BYBIT_API_SECRET.encode(), query_string.encode(), hashlib.sha256
+    ).hexdigest()
+
+    params["sign"] = signature
+    return params
 
 @app.get("/status")
 def get_status():
@@ -97,39 +101,47 @@ async def trade(request: Request):
     """Ejecuta una orden en Bybit con Stop-Loss, Take-Profit y Trailing Stop."""
     data = await request.json()
 
+    # Validar Webhook Secret
     if data.get("secret") != WEBHOOK_SECRET:
         raise HTTPException(status_code=403, detail="Acceso no autorizado")
 
-    order_type = data.get("order_type", "market").lower()
+    # Obtener datos de la orden
     symbol = data.get("symbol", "BTCUSDT").strip().upper()
-    
-    try:
-        qty = Decimal(str(data.get("qty", 0.01)))  #Precisión con Decimal
-        if qty <= 0:
-            raise ValueError("Cantidad debe ser mayor a 0")
-    except:
-        raise HTTPException(status_code=400, detail="Cantidad inválida")
+    side = data.get("side", "Buy").capitalize()  # Asegura que sea "Buy" o "Sell"
+    order_type = data.get("order_type", "market").lower()  # market, limit, stop_limit, stop_market
+    qty = str(Decimal(str(data.get("qty", 0.01))))  # Mantiene precisión decimal
 
-    if order_type not in ["buy", "sell"]:
-        raise HTTPException(status_code=400, detail="order_type debe ser 'buy' o 'sell'")
+    # Validar cantidad
+    if Decimal(qty) <= 0:
+        raise HTTPException(status_code=400, detail="Cantidad debe ser mayor a 0")
 
+    # Construcción del payload de orden
     order_payload = {
         "symbol": symbol,
-        "side": "Buy" if order_type == "buy" else "Sell",
-        "order_type": "Market" if data.get("price") is None else "Limit",
-        "qty": str(qty),
-        "time_in_force": "GTC",
-        "price": data.get("price"),
-        "stop_loss": data.get("stop_loss"),
-        "take_profit": data.get("take_profit"),
-        "trailing_stop": data.get("trailing_stop"),
+        "side": side,  # "Buy" o "Sell"
+        "order_type": order_type.capitalize(),  # "Market" o "Limit"
+        "qty": qty,
+        "time_in_force": "GoodTillCancel",  # Mantener la orden hasta que se ejecute o cancele
     }
 
-    order_payload = {k: v for k, v in order_payload.items() if v is not None}
+    # Validar si es orden `Limit` y agregar `price`
+    if order_type == "limit" and data.get("price") is not None:
+        order_payload["price"] = str(data["price"])
+
+    # Opcionales
+    if "stop_loss" in data and data["stop_loss"]:
+        order_payload["stop_loss"] = str(data["stop_loss"])
+    if "take_profit" in data and data["take_profit"]:
+        order_payload["take_profit"] = str(data["take_profit"])
+    if "trailing_stop" in data and data["trailing_stop"]:
+        order_payload["trailing_stop"] = str(data["trailing_stop"])
+
+    # Firmar la solicitud
     signed_payload = sign_request(order_payload)
 
-    url = f"{BYBIT_BASE_URL}/v2/private/order/create"
-    response = requests.post(url, json=signed_payload)
+    # Enviar solicitud a Bybit
+    url = f"{BYBIT_BASE_URL}/private/linear/order/create"
+    response = requests.post(url, data=signed_payload)
 
     try:
         result = response.json()
