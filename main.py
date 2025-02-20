@@ -67,7 +67,6 @@ def sign_request(params: dict) -> dict:
     ).hexdigest()
 
     params["sign"] = signature
-    print("📡 Payload antes de firmar:", payload)
     print("🔑 API Key:", BYBIT_API_KEY)
     print("🔏 API Secret:", BYBIT_API_SECRET)
 
@@ -133,13 +132,12 @@ async def trade(request: Request):
         order_payload["price"] = str(data["price"])
 
     # Opcionales
-    if "stop_loss" in data and data["stop_loss"]:
+    if data.get("stop_loss") is not None:
         order_payload["stop_loss"] = str(data["stop_loss"])
-    if "take_profit" in data and data["take_profit"]:
+    if data.get("take_profit") is not None:
         order_payload["take_profit"] = str(data["take_profit"])
-    if "trailing_stop" in data and data["trailing_stop"]:
+    if data.get("trailing_stop") is not None:
         order_payload["trailing_stop"] = str(data["trailing_stop"])
-
     # Firmar la solicitud
     signed_payload = sign_request(order_payload)
 
