@@ -109,7 +109,7 @@ async def trade(request: Request):
     symbol = data.get("symbol", "BTCUSDT").strip().upper()
     side = data.get("side", "Buy").capitalize()  # Asegura que sea "Buy" o "Sell"
     order_type = data.get("order_type", "market").lower()  # market, limit, stop_limit, stop_market
-    qty = str(Decimal(str(data.get("qty", 0.01))))  # Mantiene precisión decimal
+    qty = str(Decimal(str(data.get("qty", 0.000011))))  # Mantiene precisión decimal
 
     # Validar cantidad
     if Decimal(qty) <= 0:
