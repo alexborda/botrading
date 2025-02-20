@@ -75,9 +75,9 @@ async def start_bot():
     global bot_running  # ⚡ Añadir global para modificar la variable
     try:
         # Código para iniciar el bot
-        bot_running = True  # ✅ Asegurar que cambia a True
+        bot_running = True  #Asegurar que cambia a True
         print("✅ Bot iniciado correctamente")
-        return {"status": bot_running}  # ✅ Devuelve el nuevo estado
+        return {"status": bot_running}  #Devuelve el nuevo estado
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
@@ -86,9 +86,9 @@ async def stop_bot():
     global bot_running  # ⚡ Añadir global para modificar la variable
     try:
         # Código para detener el bot
-        bot_running = False  # ✅ Asegurar que cambia a False
+        bot_running = False  #Asegurar que cambia a False
         print("✅ Bot detenido correctamente")
-        return {"status": bot_running}  # ✅ Devuelve el nuevo estado
+        return {"status": bot_running}  #Devuelve el nuevo estado
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -104,7 +104,7 @@ async def trade(request: Request):
     symbol = data.get("symbol", "BTCUSDT").strip().upper()
     
     try:
-        qty = Decimal(str(data.get("qty", 0.01)))  # Precisión con Decimal
+        qty = Decimal(str(data.get("qty", 0.01)))  #Precisión con Decimal
         if qty <= 0:
             raise ValueError("Cantidad debe ser mayor a 0")
     except:
@@ -155,7 +155,7 @@ async def websocket_market(websocket: WebSocket):
                 await websocket.send_json(data)  # <-- Enviar datos al frontend
                 await asyncio.sleep(1)  # Reducir carga
     except Exception as e:
-        print(f"❌ Error en WebSocket Market: {e}")
+        print(f"Error en WebSocket Market: {e}")
 
 @app.websocket("/ws/orders")
 async def websocket_orders(websocket: WebSocket):
@@ -188,7 +188,7 @@ async def websocket_orders(websocket: WebSocket):
                     await asyncio.sleep(2)
                     continue
     except Exception as e:
-        print(f"❌ Error en Orders WebSocket: {e}")
+        print(f"Error en Orders WebSocket: {e}")
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8080))  # Railway asigna dinámicamente el puerto
