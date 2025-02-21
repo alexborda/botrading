@@ -67,10 +67,8 @@ def sign_request(params: dict) -> dict:
     ).hexdigest()
 
     params["sign"] = signature
-    print("📡 Payload antes de firmar:", params)
-    print("🔑 API Key:", BYBIT_API_KEY)
-    print("🔏 API Secret:", BYBIT_API_SECRET)
-    print("🔑 Firma generada:", signature)  # 🔥 Ver si la firma está correcta
+    print("📡 Payload antes de firmar:", params)  # Imprimir los parámetros firmados
+    print("🔑 Firma generada:", signature)  # Imprimir la firma
     return params
 
 @app.get("/status")
@@ -155,8 +153,8 @@ async def trade(request: Request):
 
     # Enviar solicitud a Bybit
     url = f"{BYBIT_BASE_URL}/private/linear/order/create"
-    response = requests.post(url, data=signed_payload)
-    print("📡 Respuesta de Bybit:", response.json())  # 🔥 Ver qué responde Bybit
+    response = requests.post(url, json=signed_payload)
+    print("📡 Respuesta de Bybit:", response.json())  #Ver qué responde Bybit
     try:
         result = response.json()
         if result.get("ret_code") != 0:
