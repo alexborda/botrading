@@ -48,20 +48,26 @@ def root():
 def sign_request(params: dict) -> dict:
     """Firma la solicitud para Bybit usando HMAC SHA256."""
     params["api_key"] = BYBIT_API_KEY
-    params["timestamp"] = str(int(time.time() * 1000))
+    params["timestamp"] = str(int(time.time() * 1000))  # Obtener timestamp en milisegundos
+    params["recv_window"] = "5000"  # Configuración recomendada de la ventana de recepción
 
     # Crear firma ordenada
     sorted_params = OrderedDict(sorted(params.items()))
     query_string = "&".join([f"{key}={value}" for key, value in sorted_params.items()])
 
+    # Usar params["recv_window"] en lugar de la variable recv_window
+    signature_string = f"{params['timestamp']}{BYBIT_API_KEY}{params['recv_window']}{query_string}"
+
+    # Generar la firma HMAC-SHA256
     signature = hmac.new(
-        BYBIT_API_SECRET.encode(), query_string.encode(), hashlib.sha256
+        BYBIT_API_SECRET.encode(), signature_string.encode(), hashlib.sha256
     ).hexdigest()
 
     params["sign"] = signature
     print("📡 Payload antes de firmar:", params)  # Imprimir los parámetros firmados
     print("🔑 Firma generada:", signature)  # Imprimir la firma
     return params
+
 
 @app.get("/status")
 def get_status():
@@ -117,7 +123,7 @@ async def trade(request: Request):
     # Validar cantidad
     if Decimal(qty) <= 0:
         raise HTTPException(status_code=400, detail="Cantidad debe ser mayor a 0")
-
+    
     # Construcción del payload de orden
     order_payload = {
         "symbol": symbol,
