@@ -3,7 +3,6 @@ import ssl
 import uvicorn
 import time
 import json
-import openai
 import requests
 import hashlib
 import hmac
@@ -19,7 +18,6 @@ bot_running = False
 
 # Inicializar FastAPI
 app = FastAPI()
-
 
 # Variables de entorno
 BYBIT_API_KEY = os.getenv("BYBIT_API_KEY")
@@ -41,12 +39,6 @@ app.add_middleware(
 
 if not BYBIT_API_KEY or not BYBIT_API_SECRET:
     raise ValueError("Faltan las claves de API de Bybit. Agrégalas en Render.")
-
-# Configuración de OpenAI (Opcional)
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-if not OPENAI_API_KEY:
-    raise ValueError("Falta la API Key de OpenAI. Agrégala en Render.")
-openai.api_key = OPENAI_API_KEY
 
 @app.get("/")
 def root():
