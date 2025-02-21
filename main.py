@@ -42,7 +42,7 @@ if not BYBIT_API_KEY or not BYBIT_API_SECRET:
 
 @app.get("/")
 def root():
-    return {"message": "API de Trading con OpenAI y Bybit 🚀"}
+    return {"message": "API de Trading en Bybit 🚀"}
 
 # Función para firmar solicitudes de Bybit
 def sign_request(params: dict) -> dict:
@@ -124,7 +124,7 @@ async def trade(request: Request):
         "side": side,  # "Buy" o "Sell"
         "order_type": order_type.capitalize(),  # "Market" o "Limit"
         "qty": qty,
-        "time_in_force": "GoodTillCancel",  # Mantener la orden hasta que se ejecute o cancele
+        "time_in_force": "GTC",  # Mantener la orden hasta que se ejecute o cancele
     }
 
     # Validar si es orden `Limit` y agregar `price`
