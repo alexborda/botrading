@@ -67,6 +67,7 @@ def sign_request(params: dict) -> dict:
     ).hexdigest()
 
     params["sign"] = signature
+    print("📡 Payload antes de firmar:", params)
     print("🔑 API Key:", BYBIT_API_KEY)
     print("🔏 API Secret:", BYBIT_API_SECRET)
 
