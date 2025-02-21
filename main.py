@@ -78,7 +78,7 @@ def get_status():
 
 @app.post("/start")
 async def start_bot():
-    global bot_running  # ⚡ Añadir global para modificar la variable
+    global bot_running  # Añadir global para modificar la variable
     try:
         # Código para iniciar el bot
         bot_running = True  #Asegurar que cambia a True
