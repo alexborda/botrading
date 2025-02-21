@@ -112,8 +112,6 @@ async def trade(request: Request):
         if field not in data:
             raise HTTPException(status_code=400, detail=f"Falta el campo requerido: {field}")
 
-    return {"message": "Solicitud procesada correctamente", "data": data}
-
     # Validar Webhook Secret
     if data.get("secret") != WEBHOOK_SECRET:
         raise HTTPException(status_code=403, detail="Acceso no autorizado")
@@ -148,21 +146,24 @@ async def trade(request: Request):
         order_payload["take_profit"] = str(data["take_profit"])
     if data.get("trailing_stop") is not None:
         order_payload["trailing_stop"] = str(data["trailing_stop"])
+
     # Firmar la solicitud
     signed_payload = sign_request(order_payload)
 
     # Enviar solicitud a Bybit
-    url = f"{BYBIT_BASE_URL}/private/linear/order/create"
+    url = f"{BYBIT_BASE_URL}/v5/order/create"  # Endpoint API v5 para crear la orden
     response = requests.post(url, json=signed_payload)
-    print("📡 Respuesta de Bybit:", response.json())  #Ver qué responde Bybit
+    print("📡 Respuesta de Bybit:", response.json())  # Ver qué responde Bybit
+    
     try:
         result = response.json()
         if result.get("ret_code") != 0:
+            print(f"❌ Error: {result.get('ret_msg')}")
             raise HTTPException(status_code=400, detail=result.get("ret_msg", "Error en la orden"))
         return {"status": "success", "data": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
+    
 @app.websocket("/ws/market")
 async def websocket_market(websocket: WebSocket):
     await websocket.accept()
