@@ -103,7 +103,18 @@ async def stop_bot():
 @app.post("/trade")
 async def trade(request: Request):
     """Ejecuta una orden en Bybit con Stop-Loss, Take-Profit y Trailing Stop."""
-    data = await request.json()
+    try:
+        data = await request.json()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error procesando JSON: {str(e)}")
+    
+    # Validar que el JSON tiene los campos correctos
+    required_fields = ["secret", "symbol", "side", "order_type", "qty"]
+    for field in required_fields:
+        if field not in data:
+            raise HTTPException(status_code=400, detail=f"Falta el campo requerido: {field}")
+
+    return {"message": "Solicitud procesada correctamente", "data": data}
 
     # Validar Webhook Secret
     if data.get("secret") != WEBHOOK_SECRET:
