@@ -154,12 +154,11 @@ async def trade(request: Request):
     url = f"{BYBIT_BASE_URL}/v5/order/create"  # Endpoint API v5 para crear la orden
     response = requests.post(url, json=signed_payload)
     print("📡 Respuesta de Bybit:", response.json())  # Ver qué responde Bybit
-    
+    print("📡 Respuesta de Bybit:", response.text)  # Ver respuesta completa
     try:
         result = response.json()
         if result.get("ret_code") != 0:
             print(f"❌ Error: {result.get('ret_msg')}")
-            print("📡 Respuesta de Bybit:", response.text)  # Ver respuesta completa
             raise HTTPException(status_code=400, detail=result.get("ret_msg", "Error en la orden"))
         return {"status": "success", "data": result}
     except Exception as e:
