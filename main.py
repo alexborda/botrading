@@ -159,6 +159,7 @@ async def trade(request: Request):
         result = response.json()
         if result.get("ret_code") != 0:
             print(f"❌ Error: {result.get('ret_msg')}")
+            print("📡 Respuesta de Bybit:", response.text)  # Ver respuesta completa
             raise HTTPException(status_code=400, detail=result.get("ret_msg", "Error en la orden"))
         return {"status": "success", "data": result}
     except Exception as e:
