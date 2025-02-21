@@ -156,7 +156,7 @@ async def trade(request: Request):
     # Enviar solicitud a Bybit
     url = f"{BYBIT_BASE_URL}/private/linear/order/create"
     response = requests.post(url, data=signed_payload)
-
+    print("📡 Respuesta de Bybit:", response.json())  # 🔥 Ver qué responde Bybit
     try:
         result = response.json()
         if result.get("ret_code") != 0:
