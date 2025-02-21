@@ -70,7 +70,7 @@ def sign_request(params: dict) -> dict:
     print("📡 Payload antes de firmar:", params)
     print("🔑 API Key:", BYBIT_API_KEY)
     print("🔏 API Secret:", BYBIT_API_SECRET)
-
+    print("🔑 Firma generada:", signature)  # 🔥 Ver si la firma está correcta
     return params
 
 @app.get("/status")
