@@ -170,7 +170,9 @@ async def trade(request: Request):
     response = requests.post(url, headers=headers, json=order_payload)
 
     # **Debugging: Imprimir respuesta**
-    print("📡 Respuesta de Bybit:", response.json())  
+    print("📡 Respuesta de Bybit:", response.json())
+    print("📡 Código de estado HTTP:", response.status_code)
+    print("📡 Headers de respuesta:", response.headers)  
     print("📡 Respuesta de Bybit:", response.text)
 
     # **Procesar respuesta**
