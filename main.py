@@ -115,6 +115,7 @@ async def trade(request: Request):
         raise HTTPException(status_code=403, detail="Acceso no autorizado")
 
     # Obtener datos de la orden
+    category = data.get("category", "linear")  # Tipo de mercado (linear, inverse, spot, option)
     symbol = data.get("symbol", "BTCUSDT").strip().upper()
     side = data.get("side", "Buy").capitalize()  # Asegura que sea "Buy" o "Sell"
     order_type = data.get("order_type", "market").lower()  # market, limit, stop_limit, stop_market
@@ -124,40 +125,60 @@ async def trade(request: Request):
     if Decimal(qty) <= 0:
         raise HTTPException(status_code=400, detail="Cantidad debe ser mayor a 0")
     
-    # Construcción del payload de orden
+    # Obtener timestamp
+    timestamp = str(int(time.time() * 1000))
+    recv_window = "5000"
+
+    # Construcción del payload de orden para Bybit
     order_payload = {
+        "category": category,  
         "symbol": symbol,
-        "side": side,  # "Buy" o "Sell"
-        "order_type": order_type.capitalize(),  # "Market" o "Limit"
+        "side": side,  
+        "orderType": order_type,  
         "qty": qty,
-        "time_in_force": "GTC",  # Mantener la orden hasta que se ejecute o cancele
+        "timeInForce": "GTC",  
+        "timestamp": timestamp,  
+        "recvWindow": recv_window  
     }
 
     # Validar si es orden `Limit` y agregar `price`
     if order_type == "limit" and data.get("price") is not None:
         order_payload["price"] = str(data["price"])
 
-    # Opcionales
+    # Agregar parámetros opcionales (stopLoss, takeProfit, trailingStop)
     if data.get("stop_loss") is not None:
-        order_payload["stop_loss"] = str(data["stop_loss"])
+        order_payload["stopLoss"] = str(data["stop_loss"])
     if data.get("take_profit") is not None:
-        order_payload["take_profit"] = str(data["take_profit"])
+        order_payload["takeProfit"] = str(data["take_profit"])
     if data.get("trailing_stop") is not None:
-        order_payload["trailing_stop"] = str(data["trailing_stop"])
+        order_payload["trailingStop"] = str(data["trailing_stop"])
 
     # Firmar la solicitud
     signed_payload = sign_request(order_payload)
 
-    # Enviar solicitud a Bybit
-    url = f"{BYBIT_BASE_URL}/v5/order/create"  # Endpoint API v5 para crear la orden
-    response = requests.post(url, json=signed_payload)
-    print("📡 Respuesta de Bybit:", response.json())  # Ver qué responde Bybit
-    print("📡 Respuesta de Bybit:", response.text)  # Ver respuesta completa
+    # **Headers con autenticación**
+    headers = {
+        "X-BAPI-API-KEY": BYBIT_API_KEY,
+        "X-BAPI-SIGN": signed_payload["sign"],
+        "X-BAPI-TIMESTAMP": timestamp,
+        "X-BAPI-RECV-WINDOW": recv_window,
+        "Content-Type": "application/json"
+    }
+
+    # **Enviar solicitud a Bybit**
+    url = f"{BYBIT_BASE_URL}/v5/order/create"
+    response = requests.post(url, headers=headers, json=order_payload)
+
+    # **Debugging: Imprimir respuesta**
+    print("📡 Respuesta de Bybit:", response.json())  
+    print("📡 Respuesta de Bybit:", response.text)
+
+    # **Procesar respuesta**
     try:
         result = response.json()
-        if result.get("ret_code") != 0:
-            print(f"❌ Error: {result.get('ret_msg')}")
-            raise HTTPException(status_code=400, detail=result.get("ret_msg", "Error en la orden"))
+        if result.get("retCode") != 0:
+            print(f"❌ Error: {result.get('retMsg')}")
+            raise HTTPException(status_code=400, detail=result.get("retMsg", "Error en la orden"))
         return {"status": "success", "data": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
