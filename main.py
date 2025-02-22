@@ -45,29 +45,29 @@ def root():
     return {"message": "API de Trading en Bybit 🚀"}
 
 # Función para firmar solicitudes de Bybit
-def sign_request(params: dict) -> dict:
+def sign_request(order_payload: dict) -> dict:
     """Firma la solicitud para Bybit usando HMAC SHA256."""
-    params["api_key"] = BYBIT_API_KEY
-    params["timestamp"] = str(int(time.time() * 1000))  # Obtener timestamp en milisegundos
-    params["recv_window"] = "5000"  # Configuración recomendada de la ventana de recepción
+    timestamp = order_payload["timestamp"]
+    recv_window = order_payload["recvWindow"]
 
-    # Crear firma ordenada
-    sorted_params = OrderedDict(sorted(params.items()))
-    query_string = "&".join([f"{key}={value}" for key, value in sorted_params.items()])
+    # Convertir el payload en JSON comprimido
+    raw_request_body = json.dumps(order_payload, separators=(',', ':'))
 
-    # Usar params["recv_window"] en lugar de la variable recv_window
-    signature_string = f"{params['timestamp']}{BYBIT_API_KEY}{params['recv_window']}{query_string}"
+    # Crear la cadena para la firma
+    signature_string = f"{timestamp}{BYBIT_API_KEY}{recv_window}{raw_request_body}"
 
     # Generar la firma HMAC-SHA256
     signature = hmac.new(
         BYBIT_API_SECRET.encode(), signature_string.encode(), hashlib.sha256
     ).hexdigest()
 
-    params["sign"] = signature
-    print("📡 Payload antes de firmar:", params)  # Imprimir los parámetros firmados
-    print("🔑 Firma generada:", signature)  # Imprimir la firma
-    return params
+    # **Agregar la firma al payload**
+    order_payload["sign"] = signature
 
+    print("📡 Payload antes de firmar:", order_payload)  # Debugging
+    print("🔑 Firma generada:", signature)  # Debugging
+
+    return order_payload
 
 @app.get("/status")
 def get_status():
