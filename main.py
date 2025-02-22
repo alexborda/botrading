@@ -90,7 +90,7 @@ async def trade(request: Request):
         raise HTTPException(status_code=403, detail="Acceso no autorizado")
 
     # Obtener datos de la orden
-    category = data.get("category", "linear")  # Tipo de mercado (linear, inverse, spot, option)
+    category = data.get("category", "linear").lower()  # Tipo de mercado (linear, inverse, spot, option)
     symbol = data.get("symbol", "BTCUSDT").strip().upper()
     side = data.get("side", "Buy").capitalize()  # Asegura que sea "Buy" o "Sell"
     order_type = data.get("order_type", "market").lower()  # market, limit, stop_limit, stop_market
@@ -159,6 +159,7 @@ async def trade(request: Request):
         return {"status": "success", "data": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
 @app.get("/status")
 def get_status():
     """Devuelve el estado actual del bot"""
