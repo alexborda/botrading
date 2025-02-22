@@ -8,10 +8,12 @@ import hashlib
 import hmac
 import asyncio
 import websockets
+import logging
 from decimal import Decimal
 from collections import OrderedDict
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)  # Oculta logs de acceso
 
 # Estado del bot
 bot_running = False
@@ -69,33 +71,6 @@ def sign_request(order_payload: dict) -> dict:
 
     return order_payload
 
-@app.get("/status")
-def get_status():
-    """Devuelve el estado actual del bot"""
-    return {"status": bot_running}
-
-@app.post("/start")
-async def start_bot():
-    global bot_running  # Añadir global para modificar la variable
-    try:
-        # Código para iniciar el bot
-        bot_running = True  #Asegurar que cambia a True
-        print("✅ Bot iniciado correctamente")
-        return {"status": bot_running}  #Devuelve el nuevo estado
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
-@app.post("/stop")
-async def stop_bot():
-    global bot_running  # ⚡ Añadir global para modificar la variable
-    try:
-        # Código para detener el bot
-        bot_running = False  #Asegurar que cambia a False
-        print("✅ Bot detenido correctamente")
-        return {"status": bot_running}  #Devuelve el nuevo estado
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.post("/trade")
 async def trade(request: Request):
     """Ejecuta una orden en Bybit con Stop-Loss, Take-Profit y Trailing Stop."""
@@ -105,7 +80,7 @@ async def trade(request: Request):
         raise HTTPException(status_code=400, detail=f"Error procesando JSON: {str(e)}")
     
     # Validar que el JSON tiene los campos correctos
-    required_fields = ["secret", "symbol", "side", "order_type", "qty"]
+    required_fields = ["secret", "category","symbol", "side", "order_type", "qty"]
     for field in required_fields:
         if field not in data:
             raise HTTPException(status_code=400, detail=f"Falta el campo requerido: {field}")
@@ -136,9 +111,7 @@ async def trade(request: Request):
         "side": side,  
         "orderType": order_type,  
         "qty": qty,
-        "timeInForce": "GTC",  
-        "timestamp": timestamp,  
-        "recvWindow": recv_window  
+        "timeInForce": "GTC" 
     }
 
     # Validar si es orden `Limit` y agregar `price`
@@ -182,6 +155,32 @@ async def trade(request: Request):
             print(f"❌ Error: {result.get('retMsg')}")
             raise HTTPException(status_code=400, detail=result.get("retMsg", "Error en la orden"))
         return {"status": "success", "data": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+@app.get("/status")
+def get_status():
+    """Devuelve el estado actual del bot"""
+    return {"status": bot_running}
+
+@app.post("/start")
+async def start_bot():
+    global bot_running  # Añadir global para modificar la variable
+    try:
+        # Código para iniciar el bot
+        bot_running = True  #Asegurar que cambia a True
+        print("✅ Bot iniciado correctamente")
+        return {"status": bot_running}  #Devuelve el nuevo estado
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/stop")
+async def stop_bot():
+    global bot_running  # ⚡ Añadir global para modificar la variable
+    try:
+        # Código para detener el bot
+        bot_running = False  #Asegurar que cambia a False
+        print("✅ Bot detenido correctamente")
+        return {"status": bot_running}  #Devuelve el nuevo estado
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
