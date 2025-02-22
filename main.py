@@ -111,7 +111,9 @@ async def trade(request: Request):
         "side": side,  
         "orderType": order_type,  
         "qty": qty,
-        "timeInForce": "GTC" 
+        "timeInForce": "GTC", 
+        "timestamp": timestamp,
+        "recv_window": recv_window,
     }
 
     # Validar si es orden `Limit` y agregar `price`
