@@ -110,6 +110,15 @@ async def trade(request: Request):
     order_type = data.get("order_type", "limit").lower()  # market, limit, stop_limit, stop_market
     qty = str(Decimal(str(data.get("qty", 0.01))))  # Mantiene precisión decimal
 
+    # Construcción del payload de orden para Bybit
+    order_payload = {
+        "category": category,
+        "symbol": symbol,
+        "side": side,
+        "orderType": order_type,
+        "qty": qty,
+        "timeInForce": "GTC",
+    }
     # Validar si es orden `Limit` y agregar `price`
     if order_payload["orderType"] == "limit" and data.get("price") is not None:
         order_payload["price"] = str(data["price"])
@@ -125,16 +134,6 @@ async def trade(request: Request):
     # Validar cantidad
     if Decimal(qty) <= 0:
         raise HTTPException(status_code=400, detail="Cantidad debe ser mayor a 0")
-
-    # Construcción del payload de orden para Bybit
-    order_payload = {
-        "category": category,
-        "symbol": symbol,
-        "side": side,
-        "orderType": order_type,
-        "qty": qty,
-        "timeInForce": "GTC",
-    }
 
     # Firmar la solicitud
     signed_payload, timestamp = sign_request(order_payload)
