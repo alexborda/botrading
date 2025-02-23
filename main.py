@@ -49,7 +49,8 @@ def root():
 # Función para firmar solicitudes de Bybit
 def sign_request(order_payload: dict) -> dict:
     """Firma la solicitud para Bybit usando HMAC SHA256."""
-    timestamp = order_payload["timestamp"]
+    timestamp = str(int(time.time() * 1000))  # Obtener el timestamp en milisegundos
+    order_payload["timestamp"] = timestamp  # Agregar el timestamp al payload
 
     # Convertir el payload en JSON comprimido
     raw_request_body = json.dumps(order_payload, separators=(',', ':'))
@@ -65,10 +66,10 @@ def sign_request(order_payload: dict) -> dict:
     # **Agregar la firma al payload**
     order_payload["sign"] = signature
 
-    print("📡 Payload antes de firmar:", order_payload)  # Debugging
-    print("🔑 Firma generada:", signature)  # Debugging
+    print("📡 Payload antes de firmar:", json.dumps(order_payload, indent=2))
+    print("🔑 Firma generada:", signature)
 
-    return order_payload
+    return order_payload, timestamp
 
 @app.post("/trade")
 async def trade(request: Request):
@@ -77,9 +78,9 @@ async def trade(request: Request):
         data = await request.json()
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error procesando JSON: {str(e)}")
-    
+
     # Validar que el JSON tiene los campos correctos
-    required_fields = ["secret", "category","symbol", "side", "order_type", "qty"]
+    required_fields = ["secret", "category", "symbol", "side", "order_type", "qty"]
     for field in required_fields:
         if field not in data:
             raise HTTPException(status_code=400, detail=f"Falta el campo requerido: {field}")
@@ -94,23 +95,19 @@ async def trade(request: Request):
     side = data.get("side", "Buy").capitalize()  # Asegura que sea "Buy" o "Sell"
     order_type = data.get("order_type", "limit").lower()  # market, limit, stop_limit, stop_market
     qty = str(Decimal(str(data.get("qty", 0.01))))  # Mantiene precisión decimal
-    
+
     # Validar cantidad
     if Decimal(qty) <= 0:
         raise HTTPException(status_code=400, detail="Cantidad debe ser mayor a 0")
-    
-    # Obtener timestamp
-    timestamp = str(int(time.time() * 1000))
 
     # Construcción del payload de orden para Bybit
     order_payload = {
-        "category": category,  
+        "category": category,
         "symbol": symbol,
-        "side": side,  
-        "orderType": order_type,  
+        "side": side,
+        "orderType": order_type,
         "qty": qty,
-        "timeInForce": "GTC", 
-        "timestamp": timestamp,
+        "timeInForce": "GTC",
     }
 
     # Validar si es orden `Limit` y agregar `price`
@@ -126,39 +123,47 @@ async def trade(request: Request):
         order_payload["trailingStop"] = str(data["trailing_stop"])
 
     # Firmar la solicitud
-    signed_payload = sign_request(order_payload)
+    signed_payload, timestamp = sign_request(order_payload)
 
     # **Headers con autenticación**
     headers = {
-        "X-BAPI-API-KEY": BYBIT_API_KEY,
         "X-BAPI-SIGN": signed_payload["sign"],
+        "X-BAPI-API-KEY": BYBIT_API_KEY,
         "X-BAPI-TIMESTAMP": timestamp,
         "Content-Type": "application/json"
     }
 
-    # **Enviar solicitud a Bybit**
+    # **Enviar solicitud a Bybit con reintento**
     url = f"{BYBIT_BASE_URL}/v5/order/create"
-    response = requests.post(url, headers=headers, json=order_payload)
+    for attempt in range(3):  # Intentar hasta 3 veces si falla
+        response = requests.post(url, headers=headers, json=order_payload)
+        
+        print(f"🔍 Intento {attempt + 1} - Status Code: {response.status_code}")
+        print(f"🔍 Headers: {response.headers}")
+        print(f"🔍 Raw Response: {response.text}")
 
-    # **Debugging: Imprimir respuesta**
-    print("📡 Respuesta de Bybit:", response.json())
-    print("📡 Código de estado HTTP:", response.status_code)
-    print("📡 Headers de respuesta:", response.headers)  
-    print("📡 Respuesta de Bybit:", response.text)
+        if response.status_code == 500:
+            print("⚠️ Error 500, reintentando en 2 segundos...")
+            time.sleep(2)
+            continue  # Reintentar
+        break  # Salir del bucle si no es error 500
 
+    # Verificar si la respuesta es válida
     if response.status_code != 200:
-        print(f"❌ Error HTTP {response.status_code}: {response.text}")  # Muestra el error en texto plano
-        raise HTTPException(status_code=response.status_code, detail=response.text)
+        raise HTTPException(status_code=response.status_code, detail=f"Bybit Error: {response.text}")
 
-    # **Procesar respuesta**
     try:
         result = response.json()
+        print("📡 Respuesta JSON de Bybit:", json.dumps(result, indent=2))
+
         if result.get("retCode") != 0:
-            print(f"❌ Error: {result.get('retMsg')}")
+            print(f"❌ Error de Bybit: {result.get('retMsg')}")
             raise HTTPException(status_code=400, detail=result.get("retMsg", "Error en la orden"))
+
         return {"status": "success", "data": result}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except requests.exceptions.JSONDecodeError:
+        print("❌ Error: La respuesta de Bybit no es JSON o está vacía.")
+        raise HTTPException(status_code=500, detail=f"Bybit devolvió una respuesta inválida: {response.text}")
     
 @app.get("/status")
 def get_status():
