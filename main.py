@@ -146,6 +146,10 @@ async def trade(request: Request):
     print("📡 Headers de respuesta:", response.headers)  
     print("📡 Respuesta de Bybit:", response.text)
 
+    if response.status_code != 200:
+        print(f"❌ Error HTTP {response.status_code}: {response.text}")  # Muestra el error en texto plano
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+
     # **Procesar respuesta**
     try:
         result = response.json()
