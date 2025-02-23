@@ -46,10 +46,21 @@ if not BYBIT_API_KEY or not BYBIT_API_SECRET:
 def root():
     return {"message": "API de Trading en Bybit 🚀"}
 
+# Función para obtener el timestamp de Bybit
+def get_timestamp():
+    """Obtiene el timestamp directamente desde el servidor de Bybit"""
+    try:
+        response = requests.get(f"{BYBIT_BASE_URL}/v5/market/time")
+        response.raise_for_status()
+        return str(response.json()["time"])  # Extraer el timestamp en milisegundos
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error obteniendo timestamp de Bybit: {e}")
+        return str(int(time.time() * 1000))  # Fallback: Usa el tiempo local si falla
+    
 # Función para firmar solicitudes de Bybit
 def sign_request(order_payload: dict) -> dict:
     """Firma la solicitud para Bybit usando HMAC SHA256."""
-    timestamp = str(int(time.time() * 1000))  # Obtener el timestamp en milisegundos
+    timestamp = get_timestamp() # Obtener el timestamp en milisegundos
     order_payload["timestamp"] = timestamp  # Agregar el timestamp al payload
 
     # Convertir el payload en JSON comprimido
@@ -127,8 +138,8 @@ async def trade(request: Request):
 
     # **Headers con autenticación**
     headers = {
-        "X-BAPI-SIGN": signed_payload["sign"],
         "X-BAPI-API-KEY": BYBIT_API_KEY,
+        "X-BAPI-SIGN": signed_payload["sign"],        
         "X-BAPI-TIMESTAMP": timestamp,
         "Content-Type": "application/json"
     }
