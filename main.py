@@ -100,7 +100,7 @@ async def trade(request: Request):
     if data.get("secret") != WEBHOOK_SECRET:
         raise HTTPException(status_code=403, detail="Acceso no autorizado")
     
-    timestamp = get_timestamp()
+    timestamp = str(int(time.time() * 1000))
     recv_window = "5000"
 
     # Obtener datos de la orden
