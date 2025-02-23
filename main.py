@@ -50,13 +50,12 @@ def root():
 def sign_request(order_payload: dict) -> dict:
     """Firma la solicitud para Bybit usando HMAC SHA256."""
     timestamp = order_payload["timestamp"]
-    recv_window = order_payload["recvWindow"]
 
     # Convertir el payload en JSON comprimido
     raw_request_body = json.dumps(order_payload, separators=(',', ':'))
 
     # Crear la cadena para la firma
-    signature_string = f"{timestamp}{BYBIT_API_KEY}{recv_window}{raw_request_body}"
+    signature_string = f"{timestamp}{BYBIT_API_KEY}{raw_request_body}"
 
     # Generar la firma HMAC-SHA256
     signature = hmac.new(
@@ -102,7 +101,6 @@ async def trade(request: Request):
     
     # Obtener timestamp
     timestamp = str(int(time.time() * 1000))
-    recv_window = "5000"
 
     # Construcción del payload de orden para Bybit
     order_payload = {
@@ -113,7 +111,6 @@ async def trade(request: Request):
         "qty": qty,
         "timeInForce": "GTC", 
         "timestamp": timestamp,
-        "recvWindow": recv_window,
     }
 
     # Validar si es orden `Limit` y agregar `price`
@@ -136,7 +133,6 @@ async def trade(request: Request):
         "X-BAPI-API-KEY": BYBIT_API_KEY,
         "X-BAPI-SIGN": signed_payload["sign"],
         "X-BAPI-TIMESTAMP": timestamp,
-        "X-BAPI-RECV-WINDOW": recv_window,
         "Content-Type": "application/json"
     }
 
