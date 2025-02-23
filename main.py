@@ -100,6 +100,7 @@ async def trade(request: Request):
     if data.get("secret") != WEBHOOK_SECRET:
         raise HTTPException(status_code=403, detail="Acceso no autorizado")
     
+    # Obtener timestamp local
     timestamp = str(int(time.time() * 1000))
     recv_window = "5000"
 
@@ -136,8 +137,8 @@ async def trade(request: Request):
         raise HTTPException(status_code=400, detail="Cantidad debe ser mayor a 0")
 
     # Firmar la solicitud
-    signed_payload, timestamp = sign_request(order_payload)
-
+    signed_payload = sign_request(order_payload, timestamp)
+    
     # **Headers con autenticación**
     headers = {
         "X-BAPI-SIGN": signed_payload["sign"],
