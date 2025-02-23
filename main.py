@@ -48,39 +48,39 @@ def root():
 
 # Función para obtener el timestamp de Bybit
 def get_timestamp():
-    """Obtiene el timestamp directamente desde el servidor de Bybit"""
+    url = f"{BYBIT_BASE_URL}/v5/market/time"
     try:
-        response = requests.get(f"{BYBIT_BASE_URL}/v5/market/time")
+        response = requests.get(url)
         response.raise_for_status()
-        return str(response.json()["time"])  # Extraer el timestamp en milisegundos
+        return str(response.json()["time"])  # Devolver timestamp en formato string
     except requests.exceptions.RequestException as e:
         print(f"❌ Error obteniendo timestamp de Bybit: {e}")
-        return str(int(time.time() * 1000))  # Fallback: Usa el tiempo local si falla
+        raise HTTPException(status_code=500, detail="Error al obtener timestamp de Bybit")
     
 # Función para firmar solicitudes de Bybit
-def sign_request(order_payload: dict) -> dict:
+def sign_request(order_payload: dict, timestamp: str) -> dict:
     """Firma la solicitud para Bybit usando HMAC SHA256."""
-    timestamp = get_timestamp() # Obtener el timestamp en milisegundos
-    order_payload["timestamp"] = timestamp  # Agregar el timestamp al payload
+    recv_window = "5000"
 
     # Convertir el payload en JSON comprimido
     raw_request_body = json.dumps(order_payload, separators=(',', ':'))
 
     # Crear la cadena para la firma
-    signature_string = f"{timestamp}{BYBIT_API_KEY}{raw_request_body}"
+    signature_string = f"{timestamp}{BYBIT_API_KEY}{recv_window}{raw_request_body}"
 
     # Generar la firma HMAC-SHA256
     signature = hmac.new(
         BYBIT_API_SECRET.encode(), signature_string.encode(), hashlib.sha256
     ).hexdigest()
 
-    # **Agregar la firma al payload**
+    # Agregar la firma y timestamp al payload
     order_payload["sign"] = signature
+    order_payload["timestamp"] = timestamp
 
-    print("📡 Payload antes de firmar:", json.dumps(order_payload, indent=2))
-    print("🔑 Firma generada:", signature)
+    print("📡 Payload antes de firmar:", order_payload)  # Debugging
+    print("🔑 Firma generada:", signature)  # Debugging
 
-    return order_payload, timestamp
+    return order_payload
 
 @app.post("/trade")
 async def trade(request: Request):
@@ -99,6 +99,9 @@ async def trade(request: Request):
     # Validar Webhook Secret
     if data.get("secret") != WEBHOOK_SECRET:
         raise HTTPException(status_code=403, detail="Acceso no autorizado")
+    
+    timestamp = get_timestamp()
+    recv_window = "5000"
 
     # Obtener datos de la orden
     category = data.get("category", "linear").lower()  # Tipo de mercado (linear, inverse, spot, option)
@@ -106,6 +109,18 @@ async def trade(request: Request):
     side = data.get("side", "Buy").capitalize()  # Asegura que sea "Buy" o "Sell"
     order_type = data.get("order_type", "limit").lower()  # market, limit, stop_limit, stop_market
     qty = str(Decimal(str(data.get("qty", 0.01))))  # Mantiene precisión decimal
+
+    # Validar si es orden `Limit` y agregar `price`
+    if order_payload["orderType"] == "limit" and data.get("price") is not None:
+        order_payload["price"] = str(data["price"])
+
+    # Agregar parámetros opcionales (stopLoss, takeProfit, trailingStop)
+    if data.get("stop_loss") is not None:
+        order_payload["stopLoss"] = str(data["stop_loss"])
+    if data.get("take_profit") is not None:
+        order_payload["takeProfit"] = str(data["take_profit"])
+    if data.get("trailing_stop") is not None:
+        order_payload["trailingStop"] = str(data["trailing_stop"])
 
     # Validar cantidad
     if Decimal(qty) <= 0:
@@ -121,26 +136,15 @@ async def trade(request: Request):
         "timeInForce": "GTC",
     }
 
-    # Validar si es orden `Limit` y agregar `price`
-    if order_type == "limit" and data.get("price") is not None:
-        order_payload["price"] = str(data["price"])
-
-    # Agregar parámetros opcionales (stopLoss, takeProfit, trailingStop)
-    if data.get("stop_loss") is not None:
-        order_payload["stopLoss"] = str(data["stop_loss"])
-    if data.get("take_profit") is not None:
-        order_payload["takeProfit"] = str(data["take_profit"])
-    if data.get("trailing_stop") is not None:
-        order_payload["trailingStop"] = str(data["trailing_stop"])
-
     # Firmar la solicitud
     signed_payload, timestamp = sign_request(order_payload)
 
     # **Headers con autenticación**
     headers = {
+        "X-BAPI-SIGN": signed_payload["sign"],
         "X-BAPI-API-KEY": BYBIT_API_KEY,
-        "X-BAPI-SIGN": signed_payload["sign"],        
         "X-BAPI-TIMESTAMP": timestamp,
+        "X-BAPI-RECV-WINDOW": recv_window,
         "Content-Type": "application/json"
     }
 
