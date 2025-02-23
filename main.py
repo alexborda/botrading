@@ -51,11 +51,16 @@ def get_timestamp():
     url = f"{BYBIT_BASE_URL}/v5/market/time"
     try:
         response = requests.get(url)
-        response.raise_for_status()
-        return str(response.json()["time"])  # Devolver timestamp en formato string
+        data = response.json()
+        
+        if data["retCode"] == 0:
+            return str(data["time"])  # Convertir el timestamp a string para usar en firmas
+        else:
+            print(f"❌ Error en Bybit: {data['retMsg']}")
+            return None
     except requests.exceptions.RequestException as e:
-        print(f"❌ Error obteniendo timestamp de Bybit: {e}")
-        raise HTTPException(status_code=500, detail="Error al obtener timestamp de Bybit")
+        print(f"❌ Error al obtener timestamp: {e}")
+        return None
     
 # Función para firmar solicitudes de Bybit
 def sign_request(order_payload: dict, timestamp: str) -> dict:
@@ -101,7 +106,7 @@ async def trade(request: Request):
         raise HTTPException(status_code=403, detail="Acceso no autorizado")
     
     # Obtener timestamp local
-    timestamp = str(int(time.time() * 1000))
+    timestamp = get_timestamp()
     recv_window = "5000"
 
     # Obtener datos de la orden
@@ -138,7 +143,7 @@ async def trade(request: Request):
 
     # Firmar la solicitud
     signed_payload = sign_request(order_payload, timestamp)
-    
+
     # **Headers con autenticación**
     headers = {
         "X-BAPI-SIGN": signed_payload["sign"],
