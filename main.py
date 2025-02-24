@@ -26,7 +26,7 @@ BYBIT_API_KEY = os.getenv("BYBIT_API_KEY")
 BYBIT_API_SECRET = os.getenv("BYBIT_API_SECRET")
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "supersecreto123")
 BYBIT_BASE_URL = os.getenv("BYBIT_BASE_URL", "https://api-testnet.bybit.com")
-BYBIT_WS_URL = os.getenv("BYBIT_WS_URL", "wss://stream-testnet.bybit.com/v5/public/spot")
+BYBIT_WS_PUBLIC = os.getenv("BYBIT_WS_URL", "wss://stream-testnet.bybit.com/v5/public/spot")
 BYBIT_WS_PRIVATE = os.getenv("BYBIT_WS_PRIVATE", "wss://stream-testnet.bybit.com/v5/private")
 
 # Configuración de CORS
