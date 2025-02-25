@@ -1,15 +1,15 @@
-# fly.toml app configuration file generated for tradingbo on 2025-02-23T21:09:13-04:00
+# fly.toml app configuration file generated for trading-autobot on 2025-02-25T10:48:08-04:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'tradingbo'
-primary_region = 'gru'
+app = 'trading-autobot'
+primary_region = 'sin'
 
 [build]
 
 [http_service]
-  internal_port = 8000
+  internal_port = 8080
   force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
@@ -17,6 +17,6 @@ primary_region = 'gru'
   processes = ['app']
 
 [[vm]]
-  memory = '2gb'
+  memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
