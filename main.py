@@ -216,7 +216,7 @@ async def stop_bot():
 async def websocket_market(websocket: WebSocket):
     await websocket.accept()
     try:
-        async with websockets.connect(BYBIT_WS_URL) as ws:
+        async with websockets.connect(BYBIT_WS_PUBLIC) as ws:
             # Suscribirse a tickers de mercado
             subscribe_message = {"op": "subscribe", "args": ["tickers.ETHUSDT"]}
             await ws.send(json.dumps(subscribe_message))
