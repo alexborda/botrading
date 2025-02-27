@@ -1,0 +1,81 @@
+/* Estilos generales */
+@layer components {
+    .app {
+        @apply min-h-screen flex flex-col items-center justify-center p-4 bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-all duration-300;
+      }
+      
+      /* Navbar */
+      .navbar {
+        @apply flex justify-between items-center w-full p-4 
+               bg-gray-800 text-white 
+               dark:bg-gray-700 dark:text-gray-200 rounded-lg shadow-md;
+      }
+      .navbar-title {
+        @apply text-2xl font-semibold text-gray-200 dark:text-gray-100;
+      }
+      .menu-button {
+        @apply md:hidden text-xl;
+      }
+      .menu {
+        @apply absolute top-14 right-4 bg-gray-700 p-4 rounded-lg shadow-lg hidden md:flex md:relative md:top-0 md:right-0 md:bg-transparent md:p-0 md:shadow-none;
+      }
+      .menu.open {
+        @apply block;
+      }
+      .menu-item {
+        @apply block w-full text-left text-white p-2 hover:bg-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg shadow-md cursor-pointer;
+      }
+      .submenu {
+        @apply bg-gray-800 p-3 rounded-lg mt-2 space-y-2;
+      }
+      .submenu-item {
+        @apply block w-full text-left text-white hover:text-blue-400 cursor-pointer;
+      }
+      
+      /* Pestañas */
+      .tabs-container {
+        @apply flex justify-center gap-4 mt-6;
+      }
+      .tab-button {
+        @apply px-4 py-2 text-sm md:text-lg font-semibold rounded-lg bg-gray-700 text-gray-300 hover:bg-blue-500 transition duration-300;
+      }
+      .tab-button.active {
+        @apply bg-blue-500 text-white;
+      }
+      
+      /* Contenedor principal */
+      .container {
+        @apply max-w-3xl mx-auto mt-6 bg-white dark:bg-gray-800 shadow-md rounded-lg p-6;
+      }
+      
+      /* Tarjetas */
+      .card {
+        @apply bg-gray-800 text-white p-6 rounded-lg shadow-md mt-4 w-full 
+               dark:bg-gray-700 dark:text-gray-200;
+      }
+    
+      /* Menú desplegable en móvil */
+      .mobile-menu {
+        @apply bg-gray-700 text-white flex flex-col space-y-2 p-4 md:hidden;
+      }
+      
+      .mobile-menu button {
+        @apply hover:bg-gray-600 p-2 rounded transition-all;
+      }
+      
+      /* Botón */
+      .button {
+        @apply w-full mt-4 p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition;
+      }
+      
+      /* Input */
+      .input-field {
+        @apply w-full p-3 text-black bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400;
+      }
+      
+      /* Footer */
+    .footer {
+        @apply text-center mt-6 text-gray-500 dark:text-gray-400;
+      }
+    }
+      

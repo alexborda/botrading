@@ -3,3 +3,8 @@ fly.toml
 __pycache__/
 .envrc
 .venv/
+/.git
+/node_modules
+.dockerignore
+.env
+Dockerfile
