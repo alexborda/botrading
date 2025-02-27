@@ -9,7 +9,7 @@ FROM node:22.13.1 AS frontend-builder
 
 WORKDIR ./
 RUN npm cache clean --force
-RUN npm install
+RUN npm install --no-cache
 
 RUN npm run build
 RUN npm prune --omit=dev
