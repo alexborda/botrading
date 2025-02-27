@@ -1,20 +1,13 @@
-# Etapa 1: Backend (FastAPI)
+# Etapa 1: Usar una imagen base de Python más completa
 FROM python:3.13.1 AS backend-builder
 
-# Asegurarnos de que pip esté instalado
-RUN apt-get update && apt-get install -y python3-pip
-
+# Establecer variables de entorno
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
 
 # Crear entorno virtual
 RUN python -m venv .venv
-
-# Instalar pip en el entorno virtual si no está disponible
-RUN .venv/bin/python -m ensurepip --upgrade
-
-# Copiar los archivos de dependencias
 COPY requirements.txt ./
 RUN .venv/bin/pip install --upgrade pip && .venv/bin/pip install -r requirements.txt
 
