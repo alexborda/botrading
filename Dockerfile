@@ -4,8 +4,8 @@ WORKDIR /backend
 
 # Copiar solo los archivos necesarios primero (para aprovechar caché de Docker)
 COPY requirements.txt ./
-RUN python -m venv .venv
-RUN .venv/bin/pip install --upgrade pip && .venv/bin/pip install -r requirements.txt
+RUN python -m venv /backend/.venv
+RUN /backend/.venv/bin/pip install --upgrade pip && /backend/.venv/bin/pip install -r requirements.txt
 
 # Copiar el código del backend
 COPY main.py ./
@@ -20,12 +20,15 @@ RUN npm run build
 
 # Etapa 3: Contenedor final con Nginx y FastAPI
 FROM nginx:alpine
-RUN apk add --no-cache python3 py3-pip python3-virtualenv
+
+# 🔥 CORRECCIÓN: Instalar solo `python3` y `py3-pip` (sin `python3-virtualenv`)
+RUN apk add --no-cache python3 py3-pip 
 
 WORKDIR /backend
 COPY --from=backend-builder /backend /backend
 COPY --from=frontend-builder /frontend/dist /usr/share/nginx/html
 
+# 🔥 CORRECCIÓN: Crear el entorno virtual de forma explícita
 RUN python3 -m venv /backend/.venv
 RUN /backend/.venv/bin/pip install --upgrade pip
 RUN /backend/.venv/bin/pip install --no-cache-dir -r /backend/requirements.txt
