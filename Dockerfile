@@ -10,7 +10,7 @@ COPY requirements.txt ./
 RUN .venv/bin/pip install -r requirements.txt
 
 # Etapa 2: Construcción del frontend (Vite)
-ARG NODE_VERSION=20.18.0
+ARG NODE_VERSION=22.13.1
 FROM node:${NODE_VERSION}-slim AS frontend-builder
 
 LABEL fly_launch_runtime="Vite"
