@@ -1,14 +1,20 @@
 # Etapa 1: Backend (FastAPI)
 FROM python:3.13.1-slim AS backend-builder
 
-# Instalar pip si no está presente
+# Asegurarnos de que pip esté instalado
 RUN apt-get update && apt-get install -y python3-pip
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
 
+# Instalar pip en el entorno virtual si no está disponible
+RUN python -m ensurepip --upgrade
+
+# Crear entorno virtual
 RUN python -m venv .venv
+
+# Copiar los archivos de dependencias
 COPY requirements.txt ./
 RUN .venv/bin/pip install --upgrade pip && .venv/bin/pip install -r requirements.txt
 
