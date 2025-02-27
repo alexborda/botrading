@@ -8,11 +8,11 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
 
-# Instalar pip en el entorno virtual si no está disponible
-RUN python -m ensurepip --upgrade
-
 # Crear entorno virtual
 RUN python -m venv .venv
+
+# Instalar pip en el entorno virtual si no está disponible
+RUN .venv/bin/python -m ensurepip --upgrade
 
 # Copiar los archivos de dependencias
 COPY requirements.txt ./
@@ -48,10 +48,11 @@ COPY --from=frontend-builder /app/dist /usr/share/nginx/html
 # Copiar la aplicación del backend FastAPI al contenedor
 COPY --from=backend-builder /app /app
 
-# Instalar dependencias de FastAPI y Uvicorn
-RUN pip install --no-cache-dir -r /app/requirements.txt
-
 # Configurar Nginx para que proxyé las solicitudes a FastAPI
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Instalar dependencias de FastAPI y Uvicorn
+RUN .venv/bin/pip install --no-cache-dir -r /app/requirements.txt
 COPY nginx.conf /etc/nginx/nginx.conf
 
 # Exponer los puertos
