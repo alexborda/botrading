@@ -35,23 +35,25 @@ RUN npm prune --omit=dev
 # Etapa 3: Configurar el contenedor final con Nginx y FastAPI
 FROM nginx:alpine
 
-# Copiar los archivos estáticos del frontend al contenedor de Nginx
-COPY --from=frontend-builder /app/dist /usr/share/nginx/html
+# Instalar Python y pip en Alpine Linux
+RUN apk add --no-cache python3 py3-pip
 
-# Copiar la aplicación del backend FastAPI al contenedor
+# Copiar la aplicación del backend desde la Etapa 1
 COPY --from=backend-builder /app /app
 
-# Instalar Python y pip en la imagen final
-RUN apk add --no-cache pipx
-RUN pipx install -r /app/requirements.txt
+# Crear un entorno virtual dentro del contenedor final
+RUN python3 -m venv /app/.venv
+
+# Activar el entorno virtual e instalar dependencias
+RUN /app/.venv/bin/pip install --upgrade pip
+RUN /app/.venv/bin/pip install --no-cache-dir -r /app/requirements.txt
 
 # Configurar Nginx
-RUN rm /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/nginx.conf
 
 # Exponer los puertos
 EXPOSE 80
 EXPOSE 8000
 
-# Comando para iniciar tanto el servidor de FastAPI como Nginx
-CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port 8000 & nginx -g 'daemon off;'"]
+# Ejecutar FastAPI dentro del entorno virtual
+CMD ["sh", "-c", "/app/.venv/bin/uvicorn app:app --host 0.0.0.0 --port 8000 & nginx -g 'daemon off;'"]
