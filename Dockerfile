@@ -1,5 +1,5 @@
 # Etapa 1: Backend (FastAPI)
-FROM python:3.13.1-slim AS backend-builder
+FROM python:3.13.1 AS backend-builder
 
 # Asegurarnos de que pip esté instalado
 RUN apt-get update && apt-get install -y python3-pip
