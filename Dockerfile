@@ -1,5 +1,8 @@
-# Etapa 1: Construir el backend (FastAPI)
-FROM python:3.13.1 AS backend-builder
+# Etapa 1: Backend (FastAPI)
+FROM python:3.13.1-slim AS backend-builder
+
+# Instalar pip si no está presente
+RUN apt-get update && apt-get install -y python3-pip
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
@@ -7,7 +10,7 @@ WORKDIR /app
 
 RUN python -m venv .venv
 COPY requirements.txt ./
-RUN .venv/bin/pip install -r requirements.txt
+RUN .venv/bin/pip install --upgrade pip && .venv/bin/pip install -r requirements.txt
 
 # Etapa 2: Construcción del frontend (Vite)
 ARG NODE_VERSION=22.13.1
