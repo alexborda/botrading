@@ -42,10 +42,8 @@ COPY --from=frontend-builder /app/dist /usr/share/nginx/html
 COPY --from=backend-builder /app /app
 
 # Instalar Python y pip en la imagen final
-RUN apk add --no-cache python3 py3-pip
-
-# Instalar dependencias directamente sin entorno virtual
-RUN pip install --no-cache-dir -r /app/requirements.txt
+RUN apk add --no-cache pipx
+RUN pipx install -r /app/requirements.txt
 
 # Configurar Nginx
 RUN rm /etc/nginx/conf.d/default.conf
