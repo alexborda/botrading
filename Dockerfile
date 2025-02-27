@@ -8,7 +8,7 @@ RUN python -m venv .venv && .venv/bin/pip install --upgrade pip && .venv/bin/pip
 FROM node:22.13.1 AS frontend-builder
 
 WORKDIR ./
-
+RUN npm cache clean --force
 RUN npm install
 
 RUN npm run build
