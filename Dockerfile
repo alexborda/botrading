@@ -41,11 +41,14 @@ COPY --from=frontend-builder /app/dist /usr/share/nginx/html
 # Copiar la aplicación del backend FastAPI al contenedor
 COPY --from=backend-builder /app /app
 
-# Configurar Nginx para que proxyé las solicitudes a FastAPI
-RUN rm /etc/nginx/conf.d/default.conf
+# Instalar Python y pip en la imagen final
+RUN apk add --no-cache python3 py3-pip
 
-# Instalar dependencias de FastAPI y Uvicorn
-RUN .venv/bin/pip install --no-cache-dir -r /app/requirements.txt
+# Instalar dependencias directamente sin entorno virtual
+RUN pip install --no-cache-dir -r /app/requirements.txt
+
+# Configurar Nginx
+RUN rm /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/nginx.conf
 
 # Exponer los puertos
