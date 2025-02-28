@@ -10,7 +10,7 @@ primary_region = 'gru'
   builder = 'paketobuildpacks/builder:base'
 
 [http_service]
-  internal_port = 80
+  internal_port = 443
   force_https = true
   auto_stop_machines = 'off'
   auto_start_machines = true
