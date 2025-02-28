@@ -62,5 +62,6 @@
     EXPOSE 8000
     
     # Ejecutar el backend (Uvicorn) en segundo plano y luego iniciar Nginx
-    CMD ["sh", "-c", "/final/backend/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 & nginx -g 'daemon off;'"]
+    CMD ["sh", "-c", "nginx -t && nginx -g 'daemon off;'"]
+
     
