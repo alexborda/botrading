@@ -5,14 +5,16 @@
     WORKDIR /build-frontend
     
     # Copiar archivos necesarios para el build del frontend
-    COPY package.json package-lock.json vite.config.js index.html tailwind.config.js postcss.config.js ./
-    # Si tus archivos fuente del frontend están en "src", los copiamos
-    COPY src ./src
-    
+    COPY package.json package-lock.json ./
+        
     # Instalar dependencias y construir el frontend
     RUN npm install --frozen-lockfile
+
+    # Copiar el resto de los archivos necesarios para el build
+    COPY . . 
+
+    # Construir el frontend
     RUN npm run build
-    # Se asume que el build se genera en la carpeta "dist"
     
     # ---------------------------
     # Etapa 2: Construcción del Backend (FastAPI)
