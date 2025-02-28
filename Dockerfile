@@ -13,8 +13,8 @@
     # Copiar el resto de los archivos necesarios para el build
     COPY . . 
 
-    # Construir el frontend
-    RUN npm run build
+    # Forzar el build y verificar si `dist/` se crea
+    RUN npm run build || (echo "⚠️ ERROR: Falló el build del frontend" && exit 1)
     
     # ---------------------------
     # Etapa 2: Construcción del Backend (FastAPI)
@@ -39,9 +39,13 @@
     # Instalar Python3 y pip en la imagen final (Nginx:alpine es muy ligera)
     RUN apk add --no-cache python3 py3-pip
     
-    # Copiar el backend construido desde la etapa 2
-    COPY --from=backend-builder /build-backend /final/backend
-    
+   # Copiar el frontend construido en la imagen final
+    COPY --from=frontend-builder /build-frontend/dist /usr/share/nginx/html
+
+    # Asegurar que la carpeta exista
+    RUN ls -lah /usr/share/nginx/html || (echo "⚠️ ERROR: No se copiaron los archivos del frontend" && exit 1)
+
+        
     # Recrear el entorno virtual en la imagen final para asegurar compatibilidad
     RUN python3 -m venv /final/backend/.venv && \
         /final/backend/.venv/bin/pip install --upgrade pip && \
