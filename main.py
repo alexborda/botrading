@@ -42,7 +42,7 @@ app.add_middleware(
 if not BYBIT_API_KEY or not BYBIT_API_SECRET:
     raise ValueError("Faltan las claves de API de Bybit. Agrégalas en Render.")
 
-@app.get("/")
+
 def root():
     return {"message": "API de Trading en Bybit 🚀"}
 
