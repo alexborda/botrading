@@ -1,9 +1,7 @@
 fastapi[standard]
-uvicorn[standard]
+uvicorn[standard]>=0.22.0
 websockets
 requests
 numpy
 pandas
 scikit-learn
-asyncio
-logging
