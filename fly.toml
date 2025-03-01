@@ -2,7 +2,7 @@ app = 'botrading'
 primary_region = 'gru'
 
 [build]
-  builder = 'dockerfile'  # Assuming you are using Dockerfile
+  builder = 'dockerfile'
 
 [[services]]
   internal_port = 80
