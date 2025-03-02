@@ -2,4 +2,23 @@ app = 'botrading'
 primary_region = 'gru'
 
 [build]
-  image = "nginx:latest"
+  builder = 'dockerfile'
+
+[[services]]
+  internal_port = 80
+  protocol = "tcp"
+  processes = ["app"] # Assuming your Dockerfile's CMD/ENTRYPOINT starts Nginx
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+
+[[vm]]
+  memory = '2gb'
+  cpu_kind = 'shared'
+  cpus = 1
