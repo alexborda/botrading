@@ -17,7 +17,6 @@ primary_region = 'gru'
     port = 443
     handlers = ["tls", "http"]
 
-
 [[vm]]
   memory = '2gb'
   cpu_kind = 'shared'
