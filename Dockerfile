@@ -23,7 +23,7 @@
     WORKDIR /build-backend
     
     # Copiar la carpeta backend completa (¡incluyendo requirements.txt dentro!)
-    COPY backend /build-backend/  # ¡COPIA LA CARPETA BACKEND COMPLETA!
+    COPY backend /build-backend/
     
     # Establecer el directorio de trabajo DENTRO de la carpeta backend en el builder
     WORKDIR /build-backend/backend # ¡CAMBIA EL WORKDIR A LA CARPETA BACKEND DENTRO DEL BUILDER!
@@ -43,7 +43,7 @@
     COPY --from=frontend-builder /build-frontend/dist /usr/share/nginx/html
     
     # Copiar el backend construido (¡incluyendo el entorno virtual!) desde la etapa backend-builder
-    COPY --from=backend-builder /build-backend/backend /final/backend  # ¡COPIA EL BACKEND DESDE EL BUILDER!
+    COPY --from=backend-builder /build-backend/backend /final/backend 
     
     # Asegurar que la carpeta del frontend exista (DEBUG - Puedes eliminar esta línea en producción si quieres)
     RUN ls -lah /usr/share/nginx/html || (echo "⚠️ ERROR: No se copiaron los archivos del frontend" && exit 1)
