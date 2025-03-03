@@ -5,7 +5,7 @@ primary_region = 'gru'
   builder = 'dockerfile'
 
 [[services]]
-  internal_port = 80
+  internal_port = 8000
   protocol = "tcp"
   processes = ["app"] # Assuming your Dockerfile's CMD/ENTRYPOINT starts Nginx
 
