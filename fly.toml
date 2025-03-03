@@ -2,8 +2,10 @@ app = 'botrading'
 primary_region = 'gru'
 
 [build]
-  remote = true
-  builder = "paketobuildpacks/builder:base"
+  builder = 'dockerfile'
+
+[[build.services]]
+  dockerfile = "Dockerfile"  # Explicitly point to the Dockerfile
 
 [[services]]
   internal_port = 80
