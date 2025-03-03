@@ -6,13 +6,13 @@
     
     # Copiar archivos necesarios para el build del frontend
     COPY package.json package-lock.json ./
-        
+    
     # Instalar dependencias y construir el frontend
     RUN npm install --frozen-lockfile
-
+    
     # Copiar el resto de los archivos necesarios para el build
-    COPY . . 
-
+    COPY . .
+    
     # Forzar el build y verificar si `dist/` se crea
     RUN npm run build || (echo "⚠️ ERROR: Falló el build del frontend" && exit 1)
     
@@ -22,10 +22,13 @@
     FROM python:3.13.1 AS backend-builder
     WORKDIR /build-backend
     
-    # Copiar los archivos necesarios para el backend (están en la raíz)
-    COPY requirements.txt main.py ./
+    # Copiar la carpeta backend completa (¡incluyendo requirements.txt dentro!)
+    COPY backend /build-backend/  # ¡COPIA LA CARPETA BACKEND COMPLETA!
     
-    # Crear un entorno virtual e instalar las dependencias
+    # Establecer el directorio de trabajo DENTRO de la carpeta backend en el builder
+    WORKDIR /build-backend/backend # ¡CAMBIA EL WORKDIR A LA CARPETA BACKEND DENTRO DEL BUILDER!
+    
+    # Crear un entorno virtual e instalar las dependencias (ahora requirements.txt está en la carpeta backend)
     RUN python -m venv .venv && \
         .venv/bin/pip install --upgrade pip && \
         .venv/bin/pip install --no-cache-dir -r requirements.txt
@@ -36,31 +39,20 @@
     FROM nginx:alpine AS final
     WORKDIR /final
     
-    # Instalar Python3 y pip en la imagen final (Nginx:alpine es muy ligera)
-    RUN apk add --no-cache python3 py3-pip
-    
-   # Copiar el frontend construido en la imagen final
+    # Copiar el frontend construido en la imagen final
     COPY --from=frontend-builder /build-frontend/dist /usr/share/nginx/html
-
-    # Asegurar que la carpeta exista
-    RUN ls -lah /usr/share/nginx/html || (echo "⚠️ ERROR: No se copiaron los archivos del frontend" && exit 1)
-
-        
-    # Recrear el entorno virtual en la imagen final para asegurar compatibilidad
-    RUN python3 -m venv /final/backend/.venv && \
-        /final/backend/.venv/bin/pip install --upgrade pip && \
-        /final/backend/.venv/bin/pip install --no-cache-dir -r /final/backend/requirements.txt
     
-    # Copiar el frontend construido desde la etapa 1 al directorio que Nginx sirve
-    COPY --from=frontend-builder /build-frontend/dist/ /usr/share/nginx/html
+    # Copiar el backend construido (¡incluyendo el entorno virtual!) desde la etapa backend-builder
+    COPY --from=backend-builder /build-backend/backend /final/backend  # ¡COPIA EL BACKEND DESDE EL BUILDER!
+    
+    # Asegurar que la carpeta del frontend exista (DEBUG - Puedes eliminar esta línea en producción si quieres)
+    RUN ls -lah /usr/share/nginx/html || (echo "⚠️ ERROR: No se copiaron los archivos del frontend" && exit 1)
     
     # Copiar la configuración personalizada de Nginx (si tienes nginx.conf en la raíz)
     COPY nginx.conf /etc/nginx/nginx.conf
     
-    # Exponer puertos: 80 para Nginx y 8000 para el backend
+    # Exponer puertos: 80 para Nginx
     EXPOSE 80
-        
-    # Ejecutar el backend (Uvicorn) en segundo plano y luego iniciar Nginx
-    CMD ["sh", "-c", "/final/backend/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 & nginx -t && nginx -g 'daemon off;'"]
-
     
+    # Comando para ejecutar el backend (Uvicorn) en segundo plano y luego iniciar Nginx
+    CMD ["sh", "-c", "/final/backend/.venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000 & nginx -t && nginx -g 'daemon off;'"]
