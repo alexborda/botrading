@@ -26,12 +26,12 @@
     COPY backend /build-backend/
     
     # Establecer el directorio de trabajo DENTRO de la carpeta backend en el builder
-    WORKDIR /build-backend/backend # ¡CAMBIA EL WORKDIR A LA CARPETA BACKEND DENTRO DEL BUILDER!
+    WORKDIR /build-backend/backend
     
     # Crear un entorno virtual e instalar las dependencias (ahora requirements.txt está en la carpeta backend)
     RUN python -m venv .venv && \
         .venv/bin/pip install --upgrade pip && \
-        .venv/bin/pip install --no-cache-dir -r requirements.txt
+        .venv/bin/pip install --no-cache-dir -r /build-backend/backend/requirements.txt
     
     # ---------------------------
     # Etapa 3: Imagen Final (Nginx + FastAPI)
@@ -43,7 +43,7 @@
     COPY --from=frontend-builder /build-frontend/dist /usr/share/nginx/html
     
     # Copiar el backend construido (¡incluyendo el entorno virtual!) desde la etapa backend-builder
-    COPY --from=backend-builder /build-backend/backend /final/backend 
+    COPY --from=backend-builder /build-backend/backend /final/backend
     
     # Asegurar que la carpeta del frontend exista (DEBUG - Puedes eliminar esta línea en producción si quieres)
     RUN ls -lah /usr/share/nginx/html || (echo "⚠️ ERROR: No se copiaron los archivos del frontend" && exit 1)
