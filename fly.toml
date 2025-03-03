@@ -2,7 +2,8 @@ app = 'botrading'
 primary_region = 'gru'
 
 [build]
-  builder = 'dockerfile'
+  remote = true
+  builder = "paketobuildpacks/builder:base"
 
 [[services]]
   internal_port = 80
@@ -16,6 +17,7 @@ primary_region = 'gru'
   [[services.ports]]
     port = 443
     handlers = ["tls", "http"]
+
 
 [[vm]]
   memory = '2gb'
