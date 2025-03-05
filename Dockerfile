@@ -31,7 +31,7 @@
     # Crear un entorno virtual e instalar las dependencias (ahora requirements.txt está en la carpeta backend)
     RUN python -m venv .venv && \
         .venv/bin/pip install --upgrade pip && \
-        .venv/bin/pip install --no-cache-dir -r requirements.txt    
+        .venv/bin/pip install --no-cache-dir -r requirements.txt
     # ---------------------------
     # Etapa 3: Imagen Final (Nginx + FastAPI)
     # ---------------------------
