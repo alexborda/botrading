@@ -1,5 +1,0 @@
-fastapi[standard]
-uvicorn[standard]
-websockets
-requests
-numpy
