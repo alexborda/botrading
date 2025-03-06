@@ -23,7 +23,7 @@
     WORKDIR /build-backend
     
     # Copiar la carpeta backend completa (¡incluyendo requirements.txt dentro!)
-    COPY backend /build-backend/
+    COPY backend /build-backend/backend/
     
     # Establecer el directorio de trabajo DENTRO de la carpeta backend en el builder
     WORKDIR /build-backend/backend
